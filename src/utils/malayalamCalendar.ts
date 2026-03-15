@@ -1,11 +1,3 @@
-const ML_DIGITS = ['൦', '൧', '൨', '൩', '൪', '൫', '൬', '൭', '൮', '൯'];
-
-function toMlNumeral(n: number): string {
-  return String(n)
-    .split('')
-    .map((d) => ML_DIGITS[parseInt(d, 10)])
-    .join('');
-}
 
 const GREG_MONTH_MAP: Record<string, number> = {
   Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
@@ -17,25 +9,25 @@ const GREG_MONTH_MAP: Record<string, number> = {
  * Accurate to ±1 day — exact dates shift slightly each year due to solar motion.
  */
 const TRANSITIONS = [
-  { m: 1,  d: 14, name: 'മകരം'     },
-  { m: 2,  d: 13, name: 'കുംഭം'     },
-  { m: 3,  d: 15, name: 'മീനം'      },
-  { m: 4,  d: 14, name: 'മേടം'      },
-  { m: 5,  d: 15, name: 'ഇടവം'      },
-  { m: 6,  d: 15, name: 'മിഥുനം'    },
-  { m: 7,  d: 17, name: 'കർക്കടകം' },
-  { m: 8,  d: 17, name: 'ചിങ്ങം'    }, // Kollavarsham new year
-  { m: 9,  d: 17, name: 'കന്നി'     },
-  { m: 10, d: 17, name: 'തുലാം'     },
-  { m: 11, d: 16, name: 'വൃശ്ചികം' },
-  { m: 12, d: 16, name: 'ധനു'       },
+  { m: 1,  d: 14, ml: 'മകരം',     en: 'Makaram'     },
+  { m: 2,  d: 13, ml: 'കുംഭം',     en: 'Kumbham'     },
+  { m: 3,  d: 15, ml: 'മീനം',      en: 'Meenam'      },
+  { m: 4,  d: 14, ml: 'മേടം',      en: 'Medam'       },
+  { m: 5,  d: 15, ml: 'ഇടവം',      en: 'Edavam'      },
+  { m: 6,  d: 15, ml: 'മിഥുനം',    en: 'Mithunam'    },
+  { m: 7,  d: 17, ml: 'കർക്കടകം', en: 'Karkadakam'  },
+  { m: 8,  d: 17, ml: 'ചിങ്ങം',    en: 'Chingam'     }, // Kollavarsham new year
+  { m: 9,  d: 17, ml: 'കന്നി',     en: 'Kanni'       },
+  { m: 10, d: 17, ml: 'തുലാം',     en: 'Thulam'      },
+  { m: 11, d: 16, ml: 'വൃശ്ചികം', en: 'Vrischikam'  },
+  { m: 12, d: 16, ml: 'ധനു',       en: 'Dhanu'       },
 ];
 
 export interface MlDate {
   year: number;
   monthMl: string;
+  monthEn: string;
   day: number;
-  display: string;
 }
 
 /**
@@ -54,7 +46,7 @@ export function toMalayalamDate(mmmDdYyyy: string): MlDate | null {
   const inputDate = new Date(gregYear, gregMonth - 1, gregDay);
 
   // Find the most recent transition ≤ inputDate (search current then previous year)
-  let bestName = '';
+  let best: (typeof TRANSITIONS)[0] | null = null;
   let bestDate: Date | null = null;
 
   outer: for (let yo = 0; yo >= -1; yo--) {
@@ -62,13 +54,13 @@ export function toMalayalamDate(mmmDdYyyy: string): MlDate | null {
       const tDate = new Date(gregYear + yo, t.m - 1, t.d);
       if (tDate <= inputDate && (!bestDate || tDate > bestDate)) {
         bestDate = tDate;
-        bestName = t.name;
+        best = t;
       }
     }
     if (bestDate) break outer;
   }
 
-  if (!bestDate) return null;
+  if (!best || !bestDate) return null;
 
   const mlDay = Math.floor((inputDate.getTime() - bestDate.getTime()) / 86_400_000) + 1;
 
@@ -78,8 +70,8 @@ export function toMalayalamDate(mmmDdYyyy: string): MlDate | null {
 
   return {
     year: kvYear,
-    monthMl: bestName,
+    monthMl: best.ml,
+    monthEn: best.en,
     day: mlDay,
-    display: `കൊ.വ. ${toMlNumeral(kvYear)} ${bestName} ${toMlNumeral(mlDay)}`,
   };
 }

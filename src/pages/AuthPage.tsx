@@ -270,9 +270,30 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
                   {/* Malayalam calendar date */}
                   {mlDate && (
-                    <p className="font-malayalam text-teal-600 text-xs mt-1">
-                      {mlDate.display}
-                    </p>
+                    <div className="mt-2 bg-teal-50 border border-teal-200 rounded-lg px-4 py-3">
+                      <p className="text-xs font-semibold text-teal-500 uppercase tracking-wider mb-1.5">
+                        കൊല്ലവർഷം · Kollavarsham
+                      </p>
+                      <div className="flex items-baseline gap-3 flex-wrap">
+                        <span className="font-malayalam text-teal-800 font-bold text-lg leading-tight">
+                          {mlDate.monthMl}
+                        </span>
+                        <span className="text-teal-700 text-sm font-medium">
+                          {mlDate.monthEn}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="text-center">
+                          <p className="font-malayalam text-teal-700 font-semibold text-base">{mlDate.year}</p>
+                          <p className="text-teal-500 text-xs">Year (KV)</p>
+                        </div>
+                        <div className="w-px h-8 bg-teal-200" />
+                        <div className="text-center">
+                          <p className="font-malayalam text-teal-700 font-semibold text-base">{mlDate.day}</p>
+                          <p className="text-teal-500 text-xs">Day</p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
 
