@@ -79,12 +79,12 @@ const Navbar: React.FC = () => {
             {/* Language toggle */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-teal-100 hover:bg-teal-600 hover:text-white transition-colors"
-              title="Toggle Language"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border-2 border-gold-400 text-gold-300 hover:bg-gold-500 hover:text-white hover:border-gold-500 transition-all"
+              title={i18n.language === 'en' ? 'Switch to Malayalam' : 'Switch to English'}
             >
-              <Globe className="w-4 h-4" />
+              <Globe className="w-4 h-4 flex-shrink-0" />
               <span className={i18n.language === 'ml' ? 'font-malayalam' : ''}>
-                {i18n.language === 'en' ? 'മല' : 'EN'}
+                {i18n.language === 'en' ? 'English' : 'മലയാളം'}
               </span>
             </button>
 
@@ -160,9 +160,12 @@ const Navbar: React.FC = () => {
           <div className="flex md:hidden items-center gap-2">
             <button
               onClick={toggleLanguage}
-              className="p-2 rounded-md text-teal-100 hover:bg-teal-600"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border-2 border-gold-400 text-gold-300 hover:bg-gold-500 hover:text-white transition-all"
             >
-              <Globe className="w-4 h-4" />
+              <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className={i18n.language === 'ml' ? 'font-malayalam' : ''}>
+                {i18n.language === 'en' ? 'English' : 'മലയാളം'}
+              </span>
             </button>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
