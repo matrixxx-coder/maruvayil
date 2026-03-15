@@ -275,7 +275,9 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                         കൊല്ലവർഷം
                       </p>
                       <p className="font-malayalam text-teal-800 font-bold text-lg leading-snug">
-                        {mlDate.year} {mlDate.monthMl} {mlDate.day}
+                        {mlDate.year} {mlDate.monthMl}{' '}
+                        <span className="font-sans font-normal text-sm text-teal-600">({mlDate.monthEn})</span>{' '}
+                        {mlDate.day}
                       </p>
                     </div>
                   )}
