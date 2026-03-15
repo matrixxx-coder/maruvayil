@@ -10,12 +10,12 @@ interface LocationState {
   from?: { pathname: string };
 }
 
-/** Format ISO date string (YYYY-MM-DD) to DD-MMM-YYYY */
+/** Format ISO date string (YYYY-MM-DD) to MMM-DD-YYYY */
 function formatDobDisplay(iso: string): string {
   if (!iso) return '';
   const [y, m, d] = iso.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${d}-${months[parseInt(m, 10) - 1]}-${y}`;
+  return `${months[parseInt(m, 10) - 1]}-${d}-${y}`;
 }
 
 const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
