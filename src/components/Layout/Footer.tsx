@@ -2,9 +2,23 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Mail, Heart } from 'lucide-react';
+import { useKeepAlive, type HealthStatus } from '../../hooks/useKeepAlive';
+
+const dot: Record<HealthStatus, string> = {
+  unknown: 'bg-gray-400',
+  ok: 'bg-green-400',
+  error: 'bg-red-400',
+};
+
+const label: Record<HealthStatus, string> = {
+  unknown: 'Checking…',
+  ok: 'Online',
+  error: 'Offline',
+};
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
+  const health = useKeepAlive();
 
   return (
     <footer className="bg-teal-900 text-teal-100">
@@ -90,9 +104,21 @@ const Footer: React.FC = () => {
           <p className="text-teal-400 text-xs">
             &copy; {new Date().getFullYear()} {t('footer.trust')}. {t('footer.rights')}.
           </p>
-          <p className="text-teal-500 text-xs flex items-center gap-1">
-            Made with <Heart className="w-3 h-3 text-maroon-400" /> for our devotees
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-teal-500 text-xs flex items-center gap-1">
+              Made with <Heart className="w-3 h-3 text-maroon-400" /> for our devotees
+            </p>
+            <div
+              className="flex items-center gap-1.5 text-xs text-teal-500"
+              title={health.lastChecked ? `Last checked: ${health.lastChecked.toLocaleTimeString()}` : 'Checking server…'}
+            >
+              <span className={`w-2 h-2 rounded-full ${dot[health.status]} ${health.status === 'ok' ? 'animate-pulse' : ''}`} />
+              <span>API {label[health.status]}</span>
+              <span className="text-teal-600">·</span>
+              <span className={`w-2 h-2 rounded-full ${dot[health.db]} ${health.db === 'ok' ? 'animate-pulse' : ''}`} />
+              <span>DB {label[health.db]}</span>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { query } from './db.js';
 import authRouter from './routes/auth.js';
 import profileRouter from './routes/profile.js';
 import familyRouter from './routes/family.js';
@@ -30,9 +31,14 @@ app.use(
 );
 app.use(express.json());
 
-// Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+// Health check — tests DB connectivity too
+app.get('/health', async (_req, res) => {
+  try {
+    await query('SELECT 1');
+    res.json({ status: 'ok', db: 'ok', timestamp: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ status: 'error', db: 'error', timestamp: new Date().toISOString() });
+  }
 });
 
 // Routes
