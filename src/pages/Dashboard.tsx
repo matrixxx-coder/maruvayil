@@ -101,7 +101,20 @@ const Dashboard: React.FC = () => {
               <h1 className="text-2xl font-bold text-white">
                 {displayName}
               </h1>
-              <p className="text-teal-300 text-sm">{user?.email}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-teal-300 text-sm">{user?.email}</p>
+                {profile?.role && (
+                  <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    profile.role === 'Trustee'
+                      ? 'bg-amber-400 text-amber-900'
+                      : profile.role === 'Family Member'
+                      ? 'bg-blue-300 text-blue-900'
+                      : 'bg-teal-300/40 text-white'
+                  }`}>
+                    {profile.role}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -11,9 +11,10 @@ interface AuthContextType {
   user: AppUser | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isTrustee: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, fullName: string, phone?: string, gender?: string, dob?: string, birthStar?: string, placeOfBirth?: string) => Promise<void>;
+  register: (email: string, password: string, fullName: string, phone?: string, gender?: string, dob?: string, birthStar?: string, placeOfBirth?: string, role?: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   isAdmin: false,
+  isTrustee: false,
   loading: true,
   login: async () => {},
   register: async () => {},
@@ -51,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AppUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTrustee, setIsTrustee] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
@@ -67,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         created_at: data.created_at,
         facebook: data.facebook,
         instagram: data.instagram,
+        role: data.role ?? 'Devotee',
       });
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -93,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const me = await authApi.me();
         setUser({ id: me.id, email: me.email });
         setIsAdmin(me.profile.isAdmin ?? false);
+        setIsTrustee((me.profile.role ?? 'Devotee') === 'Trustee');
         setProfile({
           id: me.id,
           full_name: me.profile.fullName,
@@ -104,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           created_at: me.createdAt,
           facebook: me.profile.facebook ?? null,
           instagram: me.profile.instagram ?? null,
+          role: me.profile.role ?? 'Devotee',
         });
       } catch {
         // Token is invalid or expired — clear it
@@ -128,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const me = await authApi.me();
       setIsAdmin(me.profile.isAdmin ?? false);
+      setIsTrustee((me.profile.role ?? 'Devotee') === 'Trustee');
       setProfile({
         id: me.id,
         full_name: me.profile.fullName,
@@ -139,18 +146,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         created_at: me.createdAt,
         facebook: me.profile.facebook ?? null,
         instagram: me.profile.instagram ?? null,
+        role: me.profile.role ?? 'Devotee',
       });
     } catch (err) {
       console.error('Profile fetch after login failed:', err);
     }
   };
 
-  const register = async (email: string, password: string, fullName: string, phone?: string, gender?: string, dob?: string, birthStar?: string, placeOfBirth?: string) => {
-    const { token, user: authUser } = await authApi.register(email, password, fullName, phone, gender, dob, birthStar, placeOfBirth);
+  const register = async (email: string, password: string, fullName: string, phone?: string, gender?: string, dob?: string, birthStar?: string, placeOfBirth?: string, role?: string) => {
+    const { token, user: authUser } = await authApi.register(email, password, fullName, phone, gender, dob, birthStar, placeOfBirth, role);
     setToken(token);
     const decoded = decodeTokenUser(token);
     setUser(decoded ?? { id: authUser.id, email: authUser.email });
     setIsAdmin(false);
+    setIsTrustee(false);
   };
 
   const signOut = async () => {
@@ -158,10 +167,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setProfile(null);
     setIsAdmin(false);
+    setIsTrustee(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, isAdmin, loading, login, register, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, isAdmin, isTrustee, loading, login, register, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

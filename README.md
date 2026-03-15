@@ -18,6 +18,11 @@ Live features: member portal, family management for monthly poojas, bilingual UI
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Free Hosting Guide](#free-hosting-guide)
+  - [Step 1 — Database on Neon](#step-1--database-on-neon-free-5-min)
+  - [Step 2 — Backend on Render](#step-2--backend-on-render-free-10-min)
+  - [Step 3 — Frontend on Vercel](#step-3--frontend-on-vercel-free-5-min)
+  - [Step 4 — Connect CORS](#step-4--connect-frontend-url-back-to-backend-cors)
+  - [Step 5 — Grant admin access](#step-5--grant-yourself-admin-access)
 
 ---
 
@@ -419,16 +424,103 @@ The app can be deployed for free using:
 | Component | Service | Notes |
 |-----------|---------|-------|
 | Frontend | [Vercel](https://vercel.com) | Always-on, no limits for this use case |
-| Backend | [Render](https://render.com) | Free tier sleeps after 15min idle; $7/mo to keep awake |
+| Backend | [Render](https://render.com) | Free tier sleeps after 15 min idle; $7/mo to keep awake |
 | Database | [Neon](https://neon.tech) | Free PostgreSQL, 0.5 GB, never expires |
 
-### Steps
+---
 
-1. **Neon** — create a project, run `database/init.sql` in their SQL editor, copy the connection string
-2. **Render** — new Web Service, root dir = `backend`, build: `npm ci && npm run build`, start: `node dist/index.js`, add env vars:
-   - `DATABASE_URL` = Neon connection string
-   - `JWT_SECRET` = your secret
-3. **Vercel** — import repo, root dir = `.` (project root), add env var:
-   - `VITE_API_URL` = your Render service URL (e.g. `https://maruvayil-api.onrender.com`)
+### Step 1 — Database on Neon (free, ~5 min)
 
-> **Note:** `backend/src/db.ts` currently uses individual `DB_HOST/DB_USER/...` vars. To use Render + Neon, update it to also accept a `DATABASE_URL` connection string.
+1. Go to [neon.tech](https://neon.tech) → Sign up (GitHub login works)
+2. Click **Create a project** → name it `maruvayil` → choose the region closest to India (Singapore or Mumbai) → **Create**
+3. On the dashboard, click **SQL Editor**
+4. Open `database/init.sql` from your repo, copy the entire contents, paste it into the SQL Editor → click **Run**
+5. Go to **Dashboard → Connection Details** → copy the **Connection string** (looks like `postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require`)
+
+---
+
+### Step 2 — Backend on Render (free, ~10 min)
+
+1. Go to [render.com](https://render.com) → Sign up (GitHub login works)
+2. Click **New → Web Service**
+3. Connect your GitHub account → select the `maruvayil` repo
+4. Fill in the settings:
+
+| Field | Value |
+|-------|-------|
+| Name | `maruvayil-api` |
+| Root Directory | `backend` |
+| Runtime | Node |
+| Build Command | `npm ci && npm run build` |
+| Start Command | `node dist/index.js` |
+| Instance Type | Free |
+
+5. Scroll down to **Environment Variables** → add these:
+
+| Key | Value |
+|-----|-------|
+| `DATABASE_URL` | Paste the Neon connection string from Step 1 |
+| `JWT_SECRET` | Any long random string — e.g. generate one at [randomkeygen.com](https://randomkeygen.com) |
+| `ENCRYPTION_KEY` | 64 hex characters — generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `NODE_ENV` | `production` |
+
+6. Click **Create Web Service** — wait ~3 minutes for it to build and deploy
+7. Copy your service URL — it will look like `https://maruvayil-api.onrender.com`
+
+---
+
+### Step 3 — Frontend on Vercel (free, ~5 min)
+
+1. Go to [vercel.com](https://vercel.com) → Sign up (GitHub login works)
+2. Click **Add New → Project** → import the `maruvayil` repo
+3. Leave **Framework Preset** as Vite (auto-detected)
+4. Leave **Root Directory** as `.` (project root)
+5. Expand **Environment Variables** → add one:
+
+| Key | Value |
+|-----|-------|
+| `VITE_API_URL` | `https://maruvayil-api.onrender.com` (your Render URL from Step 2) |
+
+6. Click **Deploy** — takes ~2 minutes
+7. Your app is live at `https://maruvayil.vercel.app` (or similar)
+
+---
+
+### Step 4 — Connect frontend URL back to backend (CORS)
+
+1. Go back to **Render → maruvayil-api → Environment**
+2. Add one more variable:
+
+| Key | Value |
+|-----|-------|
+| `FRONTEND_URL` | `https://maruvayil.vercel.app` (your Vercel URL) |
+
+3. Render will auto-redeploy in ~1 minute
+
+---
+
+### Step 5 — Grant yourself admin access
+
+Once you register an account on the live site:
+
+1. Go to **Neon → SQL Editor** and run:
+
+```sql
+UPDATE profiles SET is_admin = TRUE
+WHERE id = (SELECT id FROM users WHERE email_hmac = (
+  SELECT encode(hmac(lower(trim('your@email.com')), decode('<your ENCRYPTION_KEY>', 'hex'), 'sha256'), 'hex')
+));
+```
+
+> **Simpler alternative:** In the Neon SQL Editor, find your user ID first (`SELECT id, created_at FROM users ORDER BY created_at DESC LIMIT 5;`), then run `UPDATE profiles SET is_admin = TRUE WHERE id = '<your-uuid>';`
+
+---
+
+### Done ✓
+
+| What | URL |
+|------|-----|
+| Live site | `https://maruvayil.vercel.app` |
+| API health check | `https://maruvayil-api.onrender.com/health` |
+
+> **Note:** The Render free tier sleeps after 15 minutes of inactivity — the first visit after a period of no use will take ~30 seconds to wake up. Upgrade to Render's **$7/month Starter** plan to keep it always-on.

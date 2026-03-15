@@ -1,12 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { adminApi, AdminMember } from '../../lib/api';
-import { UserCheck, UserX } from 'lucide-react';
+import { UserCheck, UserX, Trash2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+
+const ROLES = ['Trustee', 'Family Member', 'Devotee'] as const;
+
+const roleBadgeClass = (role: string) => {
+  if (role === 'Trustee') return 'bg-amber-100 text-amber-700';
+  if (role === 'Family Member') return 'bg-blue-100 text-blue-700';
+  return 'bg-gray-100 text-gray-600';
+};
 
 const MembersManager: React.FC = () => {
+  const { isAdmin, isTrustee } = useAuth();
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [settingRoleId, setSettingRoleId] = useState<string | null>(null);
+  const [purgingTest, setPurgingTest] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -22,6 +34,23 @@ const MembersManager: React.FC = () => {
     };
     load();
   }, []);
+
+  const handleRoleChange = async (member: AdminMember, newRole: string) => {
+    if (newRole === member.role) return;
+    setSettingRoleId(member.id);
+    try {
+      const result = await adminApi.setMemberRole(member.id, newRole);
+      setMembers((prev) =>
+        prev.map((m) => (m.id === member.id ? { ...m, role: result.role } : m))
+      );
+      toast.success(`Role updated to ${result.role}`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update role');
+    } finally {
+      setSettingRoleId(null);
+    }
+  };
 
   const handleToggle = async (member: AdminMember) => {
     setTogglingId(member.id);
@@ -43,13 +72,48 @@ const MembersManager: React.FC = () => {
     }
   };
 
+  const handlePurgeTest = async () => {
+    const confirmed = window.confirm(
+      'This will permanently delete all users whose email contains "test". This cannot be undone. Continue?'
+    );
+    if (!confirmed) return;
+
+    setPurgingTest(true);
+    try {
+      const result = await adminApi.purgeTestUsers();
+      if (result.deleted === 0) {
+        toast.success('No test users found');
+      } else {
+        toast.success(`Purged ${result.deleted} test user${result.deleted !== 1 ? 's' : ''}`);
+        setMembers((prev) => prev.filter((m) => !m.email.toLowerCase().includes('test')));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to purge test users');
+    } finally {
+      setPurgingTest(false);
+    }
+  };
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-teal-800">Members</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          View all registered members and manage their active membership status.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-teal-800">Members</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            View all registered members and manage their active membership status.
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={handlePurgeTest}
+            disabled={purgingTest}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            <Trash2 className="w-4 h-4" />
+            {purgingTest ? 'Purging…' : 'Purge Test Users'}
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -75,6 +139,9 @@ const MembersManager: React.FC = () => {
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     Member Since
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Role
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     Status
@@ -112,6 +179,39 @@ const MembersManager: React.FC = () => {
                       </p>
                     </td>
                     <td className="px-5 py-3.5">
+                      {isAdmin ? (
+                        <select
+                          value={member.role ?? 'Devotee'}
+                          onChange={(e) => handleRoleChange(member, e.target.value)}
+                          disabled={settingRoleId === member.id}
+                          className={`text-xs font-semibold px-2 py-1 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50 ${roleBadgeClass(member.role ?? 'Devotee')}`}
+                        >
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      ) : isTrustee ? (
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${roleBadgeClass(member.role ?? 'Devotee')}`}>
+                            {member.role ?? 'Devotee'}
+                          </span>
+                          {(member.role ?? 'Devotee') !== 'Family Member' && (member.role ?? 'Devotee') !== 'Trustee' && (
+                            <button
+                              onClick={() => handleRoleChange(member, 'Family Member')}
+                              disabled={settingRoleId === member.id}
+                              className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                            >
+                              {settingRoleId === member.id ? '...' : '→ Family Member'}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${roleBadgeClass(member.role ?? 'Devotee')}`}>
+                          {member.role ?? 'Devotee'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5">
                       <span
                         className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
                           member.is_active_member
@@ -131,21 +231,23 @@ const MembersManager: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <button
-                        onClick={() => handleToggle(member)}
-                        disabled={togglingId === member.id}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
-                          member.is_active_member
-                            ? 'border-orange-200 text-orange-600 hover:bg-orange-50'
-                            : 'border-green-200 text-green-600 hover:bg-green-50'
-                        }`}
-                      >
-                        {togglingId === member.id
-                          ? 'Updating...'
-                          : member.is_active_member
-                          ? 'Mark Inactive'
-                          : 'Mark Active'}
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleToggle(member)}
+                          disabled={togglingId === member.id}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                            member.is_active_member
+                              ? 'border-orange-200 text-orange-600 hover:bg-orange-50'
+                              : 'border-green-200 text-green-600 hover:bg-green-50'
+                          }`}
+                        >
+                          {togglingId === member.id
+                            ? 'Updating...'
+                            : member.is_active_member
+                            ? 'Mark Inactive'
+                            : 'Mark Active'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

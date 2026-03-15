@@ -81,6 +81,7 @@ export interface MeResponse {
     isActiveMember: boolean;
     memberSince: string;
     isAdmin: boolean;
+    role: string;
   };
 }
 
@@ -93,10 +94,11 @@ export const authApi = {
     gender?: string,
     dob?: string,
     birthStar?: string,
-    placeOfBirth?: string
+    placeOfBirth?: string,
+    role?: string
   ): Promise<AuthResponse> {
     return apiRequest<AuthResponse>('POST', '/auth/register', {
-      email, password, fullName, phone, gender, dob, birthStar, placeOfBirth,
+      email, password, fullName, phone, gender, dob, birthStar, placeOfBirth, role,
     });
   },
   login(email: string, password: string): Promise<AuthResponse> {
@@ -121,6 +123,7 @@ export interface ProfileData {
   place_of_birth: string | null;
   facebook: string | null;
   instagram: string | null;
+  role: string;
   is_active_member: boolean;
   member_since: string;
   created_at: string;
@@ -238,6 +241,7 @@ export interface AdminMember {
   phone: string | null;
   is_active_member: boolean;
   member_since: string;
+  role: string;
 }
 
 export const adminApi = {
@@ -261,4 +265,8 @@ export const adminApi = {
   getMembers: () => apiRequest<AdminMember[]>('GET', '/admin/members'),
   toggleMemberActive: (id: string) =>
     apiRequest<{ id: string; is_active_member: boolean }>('PUT', `/admin/members/${id}/toggle-active`),
+  setMemberRole: (id: string, role: string) =>
+    apiRequest<{ id: string; role: string }>('PUT', `/admin/members/${id}/role`, { role }),
+  purgeTestUsers: () =>
+    apiRequest<{ deleted: number; message?: string }>('DELETE', '/admin/members/purge-test'),
 };

@@ -11,7 +11,7 @@ const navItems = [
 ];
 
 const AdminLayout: React.FC = () => {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isTrustee, loading } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -23,9 +23,14 @@ const AdminLayout: React.FC = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !isTrustee) {
     return <Navigate to="/" replace />;
   }
+
+  // Trustees only see the Members section
+  const visibleNavItems = isAdmin
+    ? navItems
+    : navItems.filter((item) => item.to === '/admin/members');
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path);
 
@@ -45,7 +50,7 @@ const AdminLayout: React.FC = () => {
               }}
             />
             <div>
-              <p className="font-bold text-sm text-white leading-tight">Admin Panel</p>
+              <p className="font-bold text-sm text-white leading-tight">{isAdmin ? 'Admin Panel' : 'Trustee Panel'}</p>
               <p className="text-gold-300 text-xs">Maruvayil Temple</p>
             </div>
           </div>
@@ -53,18 +58,20 @@ const AdminLayout: React.FC = () => {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          <Link
-            to="/admin"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              location.pathname === '/admin'
-                ? 'bg-teal-600 text-white'
-                : 'text-teal-100 hover:bg-teal-700 hover:text-white'
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
-            Overview
-          </Link>
-          {navItems.map((item) => (
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname === '/admin'
+                  ? 'bg-teal-600 text-white'
+                  : 'text-teal-100 hover:bg-teal-700 hover:text-white'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
+              Overview
+            </Link>
+          )}
+          {visibleNavItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -109,7 +116,7 @@ const AdminLayout: React.FC = () => {
                   }}
                 />
                 <div>
-                  <p className="font-bold text-sm text-white leading-tight">Admin Panel</p>
+                  <p className="font-bold text-sm text-white leading-tight">{isAdmin ? 'Admin Panel' : 'Trustee Panel'}</p>
                   <p className="text-gold-300 text-xs">Maruvayil Temple</p>
                 </div>
               </div>
@@ -165,7 +172,7 @@ const AdminLayout: React.FC = () => {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold text-sm">Admin Panel</span>
+          <span className="font-bold text-sm">{isAdmin ? 'Admin Panel' : 'Trustee Panel'}</span>
         </header>
 
         <main className="flex-1 p-6 overflow-auto">

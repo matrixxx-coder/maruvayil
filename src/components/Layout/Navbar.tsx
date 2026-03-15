@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 const Navbar: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isTrustee, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -114,16 +114,16 @@ const Navbar: React.FC = () => {
                     >
                       {t('nav.family')}
                     </Link>
-                    {isAdmin && (
+                    {(isAdmin || isTrustee) && (
                       <>
                         <hr className="my-1" />
                         <Link
-                          to="/admin"
+                          to={isAdmin ? '/admin' : '/admin/members'}
                           className="flex items-center gap-2 px-4 py-2 text-sm text-teal-700 font-medium hover:bg-teal-50"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           <ShieldCheck className="w-4 h-4" />
-                          Admin Panel
+                          {isAdmin ? 'Admin Panel' : 'Trustee Panel'}
                         </Link>
                       </>
                     )}
@@ -212,14 +212,14 @@ const Navbar: React.FC = () => {
                 >
                   {t('nav.family')}
                 </Link>
-                {isAdmin && (
+                {(isAdmin || isTrustee) && (
                   <Link
-                    to="/admin"
+                    to={isAdmin ? '/admin' : '/admin/members'}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gold-300 hover:bg-teal-700"
                   >
                     <ShieldCheck className="w-4 h-4" />
-                    Admin Panel
+                    {isAdmin ? 'Admin Panel' : 'Trustee Panel'}
                   </Link>
                 )}
                 <button

@@ -9,6 +9,7 @@ export interface Profile {
   created_at: string;
   facebook: string | null;
   instagram: string | null;
+  role: string;
 }
 
 export interface FamilyMember {

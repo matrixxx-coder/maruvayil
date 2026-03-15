@@ -14,7 +14,7 @@ function signToken(userId: string): string {
 
 // POST /auth/register
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { email, password, fullName, phone, gender, dob, birthStar, placeOfBirth } = req.body as {
+  const { email, password, fullName, phone, gender, dob, birthStar, placeOfBirth, role } = req.body as {
     email?: string;
     password?: string;
     fullName?: string;
@@ -23,6 +23,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     dob?: string;
     birthStar?: string;
     placeOfBirth?: string;
+    role?: string;
   };
 
   if (!email || !password || !fullName) {
@@ -42,8 +43,12 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     );
     const user = userResult.rows[0] as { id: string; email: string; created_at: string };
 
+    // Validate role — Trustee can only be assigned by admin
+    const allowedRoles = ['Devotee', 'Family Member'];
+    const assignedRole = role && allowedRoles.includes(role) ? role : 'Devotee';
+
     await query(
-      'INSERT INTO profiles (id, full_name, phone, gender, dob, birth_star, place_of_birth) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      'INSERT INTO profiles (id, full_name, phone, gender, dob, birth_star, place_of_birth, role) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
       [
         user.id,
         encryptNullable(fullName),
@@ -52,6 +57,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
         encryptNullable(dob ?? null),
         encryptNullable(birthStar ?? null),
         encryptNullable(placeOfBirth ?? null),
+        assignedRole,
       ]
     );
 
@@ -128,7 +134,7 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
               p.full_name, p.full_name_ml, p.phone, p.address,
               p.gender, p.dob, p.birth_star, p.place_of_birth,
               p.facebook, p.instagram,
-              p.is_active_member, p.member_since, p.is_admin
+              p.is_active_member, p.member_since, p.is_admin, p.role
        FROM users u
        LEFT JOIN profiles p ON p.id = u.id
        WHERE u.id = $1`,
@@ -157,6 +163,7 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
       is_active_member: boolean;
       member_since: string;
       is_admin: boolean;
+      role: string;
     };
 
     res.json({
@@ -177,6 +184,7 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
         isActiveMember: row.is_active_member,
         memberSince: row.member_since,
         isAdmin: row.is_admin ?? false,
+        role: row.role ?? 'Devotee',
       },
     });
   } catch (err) {

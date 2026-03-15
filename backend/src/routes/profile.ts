@@ -14,7 +14,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const result = await query(
       `SELECT id, full_name, full_name_ml, phone, address,
               gender, dob, birth_star, place_of_birth,
-              facebook, instagram,
+              facebook, instagram, role,
               is_active_member, member_since, created_at
        FROM profiles WHERE id = $1`,
       [req.userId]
@@ -37,6 +37,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       place_of_birth: string | null;
       facebook: string | null;
       instagram: string | null;
+      role: string;
       is_active_member: boolean;
       member_since: string;
       created_at: string;
@@ -54,6 +55,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       place_of_birth: decryptNullable(row.place_of_birth),
       facebook: decryptNullable(row.facebook),
       instagram: decryptNullable(row.instagram),
+      role: row.role ?? 'Devotee',
       is_active_member: row.is_active_member,
       member_since: row.member_since,
       created_at: row.created_at,
@@ -95,7 +97,7 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
        WHERE id = $11
        RETURNING id, full_name, full_name_ml, phone, address,
                  gender, dob, birth_star, place_of_birth,
-                 facebook, instagram,
+                 facebook, instagram, role,
                  is_active_member, member_since, created_at`,
       [
         encryptNullable(fullName ?? null),
@@ -129,6 +131,7 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
       place_of_birth: string | null;
       facebook: string | null;
       instagram: string | null;
+      role: string;
       is_active_member: boolean;
       member_since: string;
       created_at: string;
@@ -146,6 +149,7 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
       place_of_birth: decryptNullable(row.place_of_birth),
       facebook: decryptNullable(row.facebook),
       instagram: decryptNullable(row.instagram),
+      role: row.role ?? 'Devotee',
       is_active_member: row.is_active_member,
       member_since: row.member_since,
       created_at: row.created_at,

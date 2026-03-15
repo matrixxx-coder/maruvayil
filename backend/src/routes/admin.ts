@@ -1,11 +1,114 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../db.js';
 import { requireAdmin } from '../middleware/admin.js';
+import { requireAuth } from '../middleware/auth.js';
 import { decryptNullable } from '../encryption.js';
 
 const router = Router();
 
-// All routes require admin
+// ── Role management — accessible by admins AND trustees ──────────────────────
+
+// PUT /admin/members/:id/role
+// Admins can set any role. Trustees can only set "Family Member".
+router.put('/members/:id/role', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { role } = req.body as { role?: string };
+
+  const validRoles = ['Trustee', 'Family Member', 'Devotee'];
+  if (!role || !validRoles.includes(role)) {
+    res.status(400).json({ error: 'role must be one of: Trustee, Family Member, Devotee' });
+    return;
+  }
+
+  try {
+    // Look up the caller's permissions
+    const callerResult = await query(
+      'SELECT is_admin, role FROM profiles WHERE id = $1',
+      [req.userId]
+    );
+    if (callerResult.rows.length === 0) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+    const caller = callerResult.rows[0] as { is_admin: boolean; role: string };
+    const callerIsAdmin = caller.is_admin === true;
+    const callerIsTrustee = caller.role === 'Trustee';
+
+    if (!callerIsAdmin && !callerIsTrustee) {
+      res.status(403).json({ error: 'Forbidden: admin or trustee access required' });
+      return;
+    }
+    if (callerIsTrustee && !callerIsAdmin && role !== 'Family Member') {
+      res.status(403).json({ error: 'Trustees can only assign the Family Member role' });
+      return;
+    }
+
+    const result = await query(
+      'UPDATE profiles SET role = $1 WHERE id = $2 RETURNING id, role',
+      [role, id]
+    );
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Member not found' });
+      return;
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('PUT /admin/members/:id/role error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /admin/members — accessible by admins AND trustees
+router.get('/members', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Verify caller is admin or trustee
+    const callerResult = await query(
+      'SELECT is_admin, role FROM profiles WHERE id = $1',
+      [req.userId]
+    );
+    if (callerResult.rows.length === 0) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+    const caller = callerResult.rows[0] as { is_admin: boolean; role: string };
+    if (!caller.is_admin && caller.role !== 'Trustee') {
+      res.status(403).json({ error: 'Forbidden: admin or trustee access required' });
+      return;
+    }
+
+    const result = await query(
+      `SELECT u.id, u.email, u.created_at,
+              p.full_name, p.phone, p.is_active_member, p.member_since, p.role
+       FROM users u
+       LEFT JOIN profiles p ON p.id = u.id
+       ORDER BY u.created_at DESC`
+    );
+    const rows = (result.rows as Array<{
+      id: string;
+      email: string;
+      created_at: string;
+      full_name: string | null;
+      phone: string | null;
+      is_active_member: boolean;
+      member_since: string;
+      role: string;
+    }>).map((row) => ({
+      ...row,
+      email: decryptNullable(row.email) ?? row.email,
+      full_name: decryptNullable(row.full_name),
+      phone: decryptNullable(row.phone),
+      role: row.role ?? 'Devotee',
+    }));
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /admin/members error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// All routes below require admin
 router.use(requireAdmin);
 
 // ---- Content Blocks ----
@@ -263,37 +366,6 @@ router.delete('/committee/:id', async (req: Request, res: Response): Promise<voi
 
 // ---- Members Management ----
 
-// GET /admin/members
-router.get('/members', async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const result = await query(
-      `SELECT u.id, u.email, u.created_at,
-              p.full_name, p.phone, p.is_active_member, p.member_since
-       FROM users u
-       LEFT JOIN profiles p ON p.id = u.id
-       ORDER BY u.created_at DESC`
-    );
-    const rows = (result.rows as Array<{
-      id: string;
-      email: string;
-      created_at: string;
-      full_name: string | null;
-      phone: string | null;
-      is_active_member: boolean;
-      member_since: string;
-    }>).map((row) => ({
-      ...row,
-      email: decryptNullable(row.email) ?? row.email,
-      full_name: decryptNullable(row.full_name),
-      phone: decryptNullable(row.phone),
-    }));
-    res.json(rows);
-  } catch (err) {
-    console.error('GET /admin/members error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // PUT /admin/members/:id/toggle-active
 router.put('/members/:id/toggle-active', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
@@ -314,6 +386,34 @@ router.put('/members/:id/toggle-active', async (req: Request, res: Response): Pr
     res.json(result.rows[0]);
   } catch (err) {
     console.error('PUT /admin/members/:id/toggle-active error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /admin/members/purge-test
+// Finds all users whose decrypted email contains "test" (case-insensitive) and deletes them.
+// Deletion cascades to profiles, family_members, and any other related rows.
+router.delete('/members/purge-test', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await query('SELECT id, email FROM users');
+
+    const testUserIds: string[] = [];
+    for (const row of result.rows as Array<{ id: string; email: string }>) {
+      const email = decryptNullable(row.email) ?? row.email;
+      if (email.toLowerCase().includes('test')) {
+        testUserIds.push(row.id);
+      }
+    }
+
+    if (testUserIds.length === 0) {
+      res.json({ deleted: 0, message: 'No test users found' });
+      return;
+    }
+
+    await query('DELETE FROM users WHERE id = ANY($1)', [testUserIds]);
+    res.json({ deleted: testUserIds.length });
+  } catch (err) {
+    console.error('DELETE /admin/members/purge-test error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
