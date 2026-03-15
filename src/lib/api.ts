@@ -72,6 +72,9 @@ export interface MeResponse {
     fullNameMl: string | null;
     phone: string | null;
     address: string | null;
+    dob: string | null;
+    birthStar: string | null;
+    placeOfBirth: string | null;
     isActiveMember: boolean;
     memberSince: string;
     isAdmin: boolean;
@@ -79,8 +82,18 @@ export interface MeResponse {
 }
 
 export const authApi = {
-  register(email: string, password: string, fullName: string, phone?: string): Promise<AuthResponse> {
-    return apiRequest<AuthResponse>('POST', '/auth/register', { email, password, fullName, phone });
+  register(
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string,
+    dob?: string,
+    birthStar?: string,
+    placeOfBirth?: string
+  ): Promise<AuthResponse> {
+    return apiRequest<AuthResponse>('POST', '/auth/register', {
+      email, password, fullName, phone, dob, birthStar, placeOfBirth,
+    });
   },
   login(email: string, password: string): Promise<AuthResponse> {
     return apiRequest<AuthResponse>('POST', '/auth/login', { email, password });
@@ -98,6 +111,9 @@ export interface ProfileData {
   full_name_ml: string | null;
   phone: string | null;
   address: string | null;
+  dob: string | null;
+  birth_star: string | null;
+  place_of_birth: string | null;
   is_active_member: boolean;
   member_since: string;
   created_at: string;
@@ -108,6 +124,9 @@ export interface ProfileUpdateInput {
   fullNameMl?: string;
   phone?: string;
   address?: string;
+  dob?: string;
+  birthStar?: string;
+  placeOfBirth?: string;
 }
 
 export const profileApi = {

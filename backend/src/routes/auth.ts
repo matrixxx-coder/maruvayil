@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { encrypt, encryptNullable, decrypt, decryptNullable, hmacEmail } from '../encryption.js';
 
 const router = Router();
 
@@ -13,11 +14,14 @@ function signToken(userId: string): string {
 
 // POST /auth/register
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { email, password, fullName, phone } = req.body as {
+  const { email, password, fullName, phone, dob, birthStar, placeOfBirth } = req.body as {
     email?: string;
     password?: string;
     fullName?: string;
     phone?: string;
+    dob?: string;
+    birthStar?: string;
+    placeOfBirth?: string;
   };
 
   if (!email || !password || !fullName) {
@@ -27,22 +31,32 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
+    const normalizedEmail = email.toLowerCase().trim();
+    const emailHmac = hmacEmail(normalizedEmail);
+    const encryptedEmail = encrypt(normalizedEmail);
 
     const userResult = await query(
-      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
-      [email.toLowerCase().trim(), passwordHash]
+      'INSERT INTO users (email, email_hmac, password_hash) VALUES ($1, $2, $3) RETURNING id, email, created_at',
+      [encryptedEmail, emailHmac, passwordHash]
     );
     const user = userResult.rows[0] as { id: string; email: string; created_at: string };
 
     await query(
-      'INSERT INTO profiles (id, full_name, phone) VALUES ($1, $2, $3)',
-      [user.id, fullName, phone ?? null]
+      'INSERT INTO profiles (id, full_name, phone, dob, birth_star, place_of_birth) VALUES ($1, $2, $3, $4, $5, $6)',
+      [
+        user.id,
+        encryptNullable(fullName),
+        encryptNullable(phone ?? null),
+        encryptNullable(dob ?? null),
+        encryptNullable(birthStar ?? null),
+        encryptNullable(placeOfBirth ?? null),
+      ]
     );
 
     const token = signToken(user.id);
     res.status(201).json({
       token,
-      user: { id: user.id, email: user.email, createdAt: user.created_at },
+      user: { id: user.id, email: normalizedEmail, createdAt: user.created_at },
     });
   } catch (err) {
     const pgErr = err as { code?: string };
@@ -67,13 +81,11 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const identifier = email.trim();
 
   try {
-    // Match exact value first (handles plain user IDs like "admin"),
-    // then fall back to case-insensitive email match.
+    // Look up by HMAC of the identifier (works for email addresses)
+    const identifierHmac = hmacEmail(identifier);
     const result = await query(
-      `SELECT id, email, password_hash, created_at FROM users
-       WHERE email = $1 OR LOWER(email) = LOWER($1)
-       LIMIT 1`,
-      [identifier]
+      'SELECT id, email, password_hash, created_at FROM users WHERE email_hmac = $1 LIMIT 1',
+      [identifierHmac]
     );
 
     if (result.rows.length === 0) {
@@ -94,10 +106,11 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const decryptedEmail = decryptNullable(user.email) ?? user.email;
     const token = signToken(user.id);
     res.json({
       token,
-      user: { id: user.id, email: user.email, createdAt: user.created_at },
+      user: { id: user.id, email: decryptedEmail, createdAt: user.created_at },
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -111,6 +124,7 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
     const result = await query(
       `SELECT u.id, u.email, u.created_at,
               p.full_name, p.full_name_ml, p.phone, p.address,
+              p.dob, p.place_of_birth,
               p.is_active_member, p.member_since, p.is_admin
        FROM users u
        LEFT JOIN profiles p ON p.id = u.id
@@ -131,6 +145,8 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
       full_name_ml: string | null;
       phone: string | null;
       address: string | null;
+      dob: string | null;
+      place_of_birth: string | null;
       is_active_member: boolean;
       member_since: string;
       is_admin: boolean;
@@ -138,13 +154,15 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
 
     res.json({
       id: row.id,
-      email: row.email,
+      email: decryptNullable(row.email) ?? row.email,
       createdAt: row.created_at,
       profile: {
-        fullName: row.full_name,
-        fullNameMl: row.full_name_ml,
-        phone: row.phone,
-        address: row.address,
+        fullName: decryptNullable(row.full_name),
+        fullNameMl: decryptNullable(row.full_name_ml),
+        phone: decryptNullable(row.phone),
+        address: decryptNullable(row.address),
+        dob: decryptNullable(row.dob),
+        placeOfBirth: decryptNullable(row.place_of_birth),
         isActiveMember: row.is_active_member,
         memberSince: row.member_since,
         isAdmin: row.is_admin ?? false,

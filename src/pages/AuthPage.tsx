@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff, AtSign, Lock, User, Phone } from 'lucide-react';
+import { Eye, EyeOff, AtSign, Lock, User, Phone, Calendar, Star, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import { BIRTH_STARS, WORLD_CITIES } from '../constants/templeData';
 
 interface LocationState {
   from?: { pathname: string };
+}
+
+/** Format ISO date string (YYYY-MM-DD) to DD-MMM-YYYY */
+function formatDobDisplay(iso: string): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d}-${months[parseInt(m, 10) - 1]}-${y}`;
 }
 
 const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
@@ -23,6 +32,9 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
     password: '',
     full_name: '',
     phone: '',
+    dob: '',          // stored as YYYY-MM-DD (from date input)
+    birth_star: '',
+    place_of_birth: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,7 +44,6 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
     const e: Record<string, string> = {};
     if (mode === 'register') {
       if (!form.full_name.trim()) e.full_name = 'Full name is required';
-      // Email must be a valid email address for registration
       if (!form.email.trim()) {
         e.email = 'Email is required';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
@@ -55,7 +66,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
     }
   }, [user, navigate, from]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -70,7 +81,15 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
         toast.success(t('auth.login_success'));
         navigate(from, { replace: true });
       } else {
-        await register(form.email, form.password, form.full_name, form.phone || undefined);
+        await register(
+          form.email,
+          form.password,
+          form.full_name,
+          form.phone || undefined,
+          form.dob || undefined,
+          form.birth_star || undefined,
+          form.place_of_birth || undefined,
+        );
         toast.success(t('auth.register_success'));
         navigate('/dashboard', { replace: true });
       }
@@ -116,6 +135,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {mode === 'register' && (
               <>
+                {/* Full Name */}
                 <div>
                   <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
                     {t('auth.full_name')} *
@@ -134,6 +154,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
                 </div>
 
+                {/* Phone */}
                 <div>
                   <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
                     {t('auth.phone')}
@@ -150,9 +171,78 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                     />
                   </div>
                 </div>
+
+                {/* Date of Birth */}
+                <div>
+                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                    {isMl ? 'ജനനത്തീയതി' : 'Date of Birth'}
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="date"
+                      name="dob"
+                      value={form.dob}
+                      onChange={handleChange}
+                      max={new Date().toISOString().split('T')[0]}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                    />
+                  </div>
+                  {form.dob && (
+                    <p className="text-teal-600 text-xs mt-1">{formatDobDisplay(form.dob)}</p>
+                  )}
+                </div>
+
+                {/* Birth Star */}
+                <div>
+                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                    {isMl ? 'ജന്മ നക്ഷത്രം' : 'Birth Star (Nakshatra)'}
+                  </label>
+                  <div className="relative">
+                    <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <select
+                      name="birth_star"
+                      value={form.birth_star}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white appearance-none"
+                    >
+                      <option value="">{isMl ? 'നക്ഷത്രം തിരഞ്ഞെടുക്കുക' : 'Select birth star'}</option>
+                      {BIRTH_STARS.map((star) => (
+                        <option key={star.en} value={star.en}>
+                          {star.ml} ({star.en})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Place of Birth */}
+                <div>
+                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                    {isMl ? 'ജന്മസ്ഥലം' : 'Place of Birth'}
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      name="place_of_birth"
+                      value={form.place_of_birth}
+                      onChange={handleChange}
+                      list="cities-list"
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                      placeholder={isMl ? 'നഗരം, രാജ്യം' : 'City, Country'}
+                    />
+                    <datalist id="cities-list">
+                      {WORLD_CITIES.map((city) => (
+                        <option key={city} value={city} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
               </>
             )}
 
+            {/* Email / User ID */}
             <div>
               <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
                 {mode === 'login'
@@ -174,6 +264,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
+            {/* Password */}
             <div>
               <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
                 {t('auth.password')} *

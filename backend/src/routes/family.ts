@@ -1,25 +1,38 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { encryptNullable, decryptNullable, encrypt } from '../encryption.js';
 
 const router = Router();
 
 // All routes require auth
 router.use(requireAuth);
 
+function decryptRow(row: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...row,
+    name: decryptNullable(row.name as string) ?? row.name,
+    name_malayalam: decryptNullable(row.name_malayalam as string | null),
+    birth_date: decryptNullable((row.birth_date_enc as string | null) ?? (row.birth_date as string | null)),
+    birth_star: decryptNullable(row.birth_star as string | null),
+    rashi: decryptNullable(row.rashi as string | null),
+    notes: decryptNullable(row.notes as string | null),
+  };
+}
+
 // GET /family-members
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(
       `SELECT id, user_id, name, name_malayalam, relationship,
-              birth_date, birth_star, rashi, notes, include_in_pooja,
+              birth_date, birth_date_enc, birth_star, rashi, notes, include_in_pooja,
               created_at, updated_at
        FROM family_members
        WHERE user_id = $1
        ORDER BY created_at ASC`,
       [req.userId]
     );
-    res.json(result.rows);
+    res.json(result.rows.map(decryptRow));
   } catch (err) {
     console.error('Family GET error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -56,25 +69,25 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(
       `INSERT INTO family_members
-         (user_id, name, name_malayalam, relationship, birth_date, birth_star, rashi, notes, include_in_pooja)
+         (user_id, name, name_malayalam, relationship, birth_date_enc, birth_star, rashi, notes, include_in_pooja)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id, user_id, name, name_malayalam, relationship,
-                 birth_date, birth_star, rashi, notes, include_in_pooja,
+                 birth_date, birth_date_enc, birth_star, rashi, notes, include_in_pooja,
                  created_at, updated_at`,
       [
         req.userId,
-        name,
-        nameMalayalam ?? null,
+        encrypt(name),
+        encryptNullable(nameMalayalam ?? null),
         relationship,
-        birthDate ?? null,
-        birthStar ?? null,
-        rashi ?? null,
-        notes ?? null,
+        encryptNullable(birthDate ?? null),
+        encryptNullable(birthStar ?? null),
+        encryptNullable(rashi ?? null),
+        encryptNullable(notes ?? null),
         includeInPooja !== undefined ? includeInPooja : true,
       ]
     );
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(decryptRow(result.rows[0] as Record<string, unknown>));
   } catch (err) {
     console.error('Family POST error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -121,30 +134,30 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
        SET name            = COALESCE($1, name),
            name_malayalam  = COALESCE($2, name_malayalam),
            relationship    = COALESCE($3, relationship),
-           birth_date      = COALESCE($4, birth_date),
+           birth_date_enc  = COALESCE($4, birth_date_enc),
            birth_star      = COALESCE($5, birth_star),
            rashi           = COALESCE($6, rashi),
            notes           = COALESCE($7, notes),
            include_in_pooja = COALESCE($8, include_in_pooja)
        WHERE id = $9 AND user_id = $10
        RETURNING id, user_id, name, name_malayalam, relationship,
-                 birth_date, birth_star, rashi, notes, include_in_pooja,
+                 birth_date, birth_date_enc, birth_star, rashi, notes, include_in_pooja,
                  created_at, updated_at`,
       [
-        name ?? null,
-        nameMalayalam ?? null,
+        name ? encrypt(name) : null,
+        encryptNullable(nameMalayalam ?? null),
         relationship ?? null,
-        birthDate ?? null,
-        birthStar ?? null,
-        rashi ?? null,
-        notes ?? null,
+        encryptNullable(birthDate ?? null),
+        encryptNullable(birthStar ?? null),
+        encryptNullable(rashi ?? null),
+        encryptNullable(notes ?? null),
         includeInPooja !== undefined ? includeInPooja : null,
         id,
         req.userId,
       ]
     );
 
-    res.json(result.rows[0]);
+    res.json(decryptRow(result.rows[0] as Record<string, unknown>));
   } catch (err) {
     console.error('Family PUT error:', err);
     res.status(500).json({ error: 'Internal server error' });

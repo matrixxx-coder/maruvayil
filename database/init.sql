@@ -1,7 +1,8 @@
 -- Users table (replaces Supabase auth.users)
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT UNIQUE NOT NULL,
+  email TEXT NOT NULL,              -- AES-256-GCM encrypted
+  email_hmac TEXT UNIQUE NOT NULL,  -- HMAC-SHA256 for lookups (not reversible)
   password_hash TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -9,10 +10,13 @@ CREATE TABLE IF NOT EXISTS users (
 -- Profiles table
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  full_name TEXT,
-  full_name_ml TEXT,
-  phone TEXT,
-  address TEXT,
+  full_name TEXT,        -- encrypted
+  full_name_ml TEXT,     -- encrypted
+  phone TEXT,            -- encrypted
+  address TEXT,          -- encrypted
+  dob TEXT,              -- encrypted date of birth
+  birth_star TEXT,       -- encrypted
+  place_of_birth TEXT,   -- encrypted
   is_active_member BOOLEAN DEFAULT FALSE,
   member_since TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -22,13 +26,13 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS family_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  name_malayalam TEXT,
+  name TEXT NOT NULL,       -- encrypted
+  name_malayalam TEXT,      -- encrypted
   relationship TEXT NOT NULL,
-  birth_date DATE,
-  birth_star TEXT,
-  rashi TEXT,
-  notes TEXT,
+  birth_date TEXT,          -- encrypted date string
+  birth_star TEXT,          -- encrypted
+  rashi TEXT,               -- encrypted
+  notes TEXT,               -- encrypted
   include_in_pooja BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -118,3 +122,18 @@ ON CONFLICT DO NOTHING;
 CREATE OR REPLACE TRIGGER announcements_updated_at
   BEFORE UPDATE ON announcements
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ── Encryption migration (safe to re-run on existing databases) ──────────────
+-- Add email_hmac column if missing (existing rows will have NULL — run the
+-- backend migration script to back-fill HMACs after setting ENCRYPTION_KEY)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_hmac TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_hmac ON users(email_hmac) WHERE email_hmac IS NOT NULL;
+
+-- New profile fields
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dob TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_star TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS place_of_birth TEXT;
+
+-- family_members.birth_date was DATE; add a TEXT column for the encrypted value
+-- (old DATE column is kept so no existing data is lost)
+ALTER TABLE family_members ADD COLUMN IF NOT EXISTS birth_date_enc TEXT;

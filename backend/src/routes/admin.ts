@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../db.js';
 import { requireAdmin } from '../middleware/admin.js';
+import { decryptNullable } from '../encryption.js';
 
 const router = Router();
 
@@ -272,7 +273,21 @@ router.get('/members', async (_req: Request, res: Response): Promise<void> => {
        LEFT JOIN profiles p ON p.id = u.id
        ORDER BY u.created_at DESC`
     );
-    res.json(result.rows);
+    const rows = (result.rows as Array<{
+      id: string;
+      email: string;
+      created_at: string;
+      full_name: string | null;
+      phone: string | null;
+      is_active_member: boolean;
+      member_since: string;
+    }>).map((row) => ({
+      ...row,
+      email: decryptNullable(row.email) ?? row.email,
+      full_name: decryptNullable(row.full_name),
+      phone: decryptNullable(row.phone),
+    }));
+    res.json(rows);
   } catch (err) {
     console.error('GET /admin/members error:', err);
     res.status(500).json({ error: 'Internal server error' });

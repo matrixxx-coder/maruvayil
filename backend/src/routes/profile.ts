@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { encryptNullable, decryptNullable } from '../encryption.js';
 
 const router = Router();
 
@@ -12,6 +13,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(
       `SELECT id, full_name, full_name_ml, phone, address,
+              dob, birth_star, place_of_birth,
               is_active_member, member_since, created_at
        FROM profiles WHERE id = $1`,
       [req.userId]
@@ -28,6 +30,9 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       full_name_ml: string | null;
       phone: string | null;
       address: string | null;
+      dob: string | null;
+      birth_star: string | null;
+      place_of_birth: string | null;
       is_active_member: boolean;
       member_since: string;
       created_at: string;
@@ -35,10 +40,13 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
     res.json({
       id: row.id,
-      full_name: row.full_name,
-      full_name_ml: row.full_name_ml,
-      phone: row.phone,
-      address: row.address,
+      full_name: decryptNullable(row.full_name),
+      full_name_ml: decryptNullable(row.full_name_ml),
+      phone: decryptNullable(row.phone),
+      address: decryptNullable(row.address),
+      dob: decryptNullable(row.dob),
+      birth_star: decryptNullable(row.birth_star),
+      place_of_birth: decryptNullable(row.place_of_birth),
       is_active_member: row.is_active_member,
       member_since: row.member_since,
       created_at: row.created_at,
@@ -51,24 +59,40 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
 // PUT /profile
 router.put('/', async (req: Request, res: Response): Promise<void> => {
-  const { fullName, fullNameMl, phone, address } = req.body as {
+  const { fullName, fullNameMl, phone, address, dob, birthStar, placeOfBirth } = req.body as {
     fullName?: string;
     fullNameMl?: string;
     phone?: string;
     address?: string;
+    dob?: string;
+    birthStar?: string;
+    placeOfBirth?: string;
   };
 
   try {
     const result = await query(
       `UPDATE profiles
-       SET full_name    = COALESCE($1, full_name),
-           full_name_ml = COALESCE($2, full_name_ml),
-           phone        = COALESCE($3, phone),
-           address      = COALESCE($4, address)
-       WHERE id = $5
+       SET full_name      = COALESCE($1, full_name),
+           full_name_ml   = COALESCE($2, full_name_ml),
+           phone          = COALESCE($3, phone),
+           address        = COALESCE($4, address),
+           dob            = COALESCE($5, dob),
+           birth_star     = COALESCE($6, birth_star),
+           place_of_birth = COALESCE($7, place_of_birth)
+       WHERE id = $8
        RETURNING id, full_name, full_name_ml, phone, address,
+                 dob, birth_star, place_of_birth,
                  is_active_member, member_since, created_at`,
-      [fullName ?? null, fullNameMl ?? null, phone ?? null, address ?? null, req.userId]
+      [
+        encryptNullable(fullName ?? null),
+        encryptNullable(fullNameMl ?? null),
+        encryptNullable(phone ?? null),
+        encryptNullable(address ?? null),
+        encryptNullable(dob ?? null),
+        encryptNullable(birthStar ?? null),
+        encryptNullable(placeOfBirth ?? null),
+        req.userId,
+      ]
     );
 
     if (result.rows.length === 0) {
@@ -82,6 +106,9 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
       full_name_ml: string | null;
       phone: string | null;
       address: string | null;
+      dob: string | null;
+      birth_star: string | null;
+      place_of_birth: string | null;
       is_active_member: boolean;
       member_since: string;
       created_at: string;
@@ -89,10 +116,13 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
 
     res.json({
       id: row.id,
-      full_name: row.full_name,
-      full_name_ml: row.full_name_ml,
-      phone: row.phone,
-      address: row.address,
+      full_name: decryptNullable(row.full_name),
+      full_name_ml: decryptNullable(row.full_name_ml),
+      phone: decryptNullable(row.phone),
+      address: decryptNullable(row.address),
+      dob: decryptNullable(row.dob),
+      birth_star: decryptNullable(row.birth_star),
+      place_of_birth: decryptNullable(row.place_of_birth),
       is_active_member: row.is_active_member,
       member_since: row.member_since,
       created_at: row.created_at,
