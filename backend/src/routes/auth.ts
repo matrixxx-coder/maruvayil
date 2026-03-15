@@ -37,29 +37,60 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     const emailHmac = hmacEmail(normalizedEmail);
     const encryptedEmail = encrypt(normalizedEmail);
 
-    const userResult = await query(
-      'INSERT INTO users (email, email_hmac, password_hash) VALUES ($1, $2, $3) RETURNING id, email, created_at',
-      [encryptedEmail, emailHmac, passwordHash]
-    );
+    // Try insert with email_hmac; fall back if column not yet migrated
+    let userResult;
+    try {
+      userResult = await query(
+        'INSERT INTO users (email, email_hmac, password_hash) VALUES ($1, $2, $3) RETURNING id, email, created_at',
+        [encryptedEmail, emailHmac, passwordHash]
+      );
+    } catch (colErr) {
+      const pgErr = colErr as { code?: string; message?: string };
+      if (pgErr.message?.includes('email_hmac')) {
+        // Column not yet migrated — insert without it
+        userResult = await query(
+          'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
+          [encryptedEmail, passwordHash]
+        );
+      } else {
+        throw colErr;
+      }
+    }
     const user = userResult.rows[0] as { id: string; email: string; created_at: string };
 
     // Validate role — Trustee can only be assigned by admin
     const allowedRoles = ['Devotee', 'Family Member'];
     const assignedRole = role && allowedRoles.includes(role) ? role : 'Devotee';
 
-    await query(
-      'INSERT INTO profiles (id, full_name, phone, gender, dob, birth_star, place_of_birth, role) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-      [
-        user.id,
-        encryptNullable(fullName),
-        encryptNullable(phone ?? null),
-        encryptNullable(gender ?? null),
-        encryptNullable(dob ?? null),
-        encryptNullable(birthStar ?? null),
-        encryptNullable(placeOfBirth ?? null),
-        assignedRole,
-      ]
-    );
+    try {
+      await query(
+        'INSERT INTO profiles (id, full_name, phone, gender, dob, birth_star, place_of_birth, role) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [
+          user.id,
+          encryptNullable(fullName),
+          encryptNullable(phone ?? null),
+          encryptNullable(gender ?? null),
+          encryptNullable(dob ?? null),
+          encryptNullable(birthStar ?? null),
+          encryptNullable(placeOfBirth ?? null),
+          assignedRole,
+        ]
+      );
+    } catch {
+      // role column not yet migrated — insert without it
+      await query(
+        'INSERT INTO profiles (id, full_name, phone, gender, dob, birth_star, place_of_birth) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [
+          user.id,
+          encryptNullable(fullName),
+          encryptNullable(phone ?? null),
+          encryptNullable(gender ?? null),
+          encryptNullable(dob ?? null),
+          encryptNullable(birthStar ?? null),
+          encryptNullable(placeOfBirth ?? null),
+        ]
+      );
+    }
 
     const token = signToken(user.id);
     res.status(201).json({
@@ -89,24 +120,38 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const identifier = email.trim();
 
   try {
-    // Look up by HMAC of the identifier (works for email addresses)
-    const identifierHmac = hmacEmail(identifier);
-    const result = await query(
-      'SELECT id, email, password_hash, created_at FROM users WHERE email_hmac = $1 LIMIT 1',
-      [identifierHmac]
-    );
+    type UserRow = { id: string; email: string; password_hash: string; created_at: string };
 
-    if (result.rows.length === 0) {
+    // Primary lookup: HMAC index (fast, O(1))
+    let user: UserRow | null = null;
+    try {
+      const identifierHmac = hmacEmail(identifier);
+      const result = await query(
+        'SELECT id, email, password_hash, created_at FROM users WHERE email_hmac = $1 LIMIT 1',
+        [identifierHmac]
+      );
+      if (result.rows.length > 0) user = result.rows[0] as UserRow;
+    } catch {
+      // email_hmac column not yet migrated — fall through to scan
+    }
+
+    // Fallback: decrypt every email and compare (handles pre-migration databases)
+    if (!user) {
+      const all = await query('SELECT id, email, password_hash, created_at FROM users');
+      const normalised = identifier.toLowerCase().trim();
+      for (const row of all.rows as UserRow[]) {
+        const decrypted = (decryptNullable(row.email) ?? row.email).toLowerCase().trim();
+        if (decrypted === normalised) {
+          user = row;
+          break;
+        }
+      }
+    }
+
+    if (!user) {
       res.status(401).json({ error: 'Invalid User ID / email or password' });
       return;
     }
-
-    const user = result.rows[0] as {
-      id: string;
-      email: string;
-      password_hash: string;
-      created_at: string;
-    };
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
