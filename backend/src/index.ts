@@ -8,11 +8,23 @@ import contentRouter from './routes/content.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '4000', 10);
-const FRONTEND_URL = process.env.FRONTEND_URL;
+
+// FRONTEND_URL can be a comma-separated list for multiple allowed origins
+// e.g. "https://maruvayil.vercel.app,http://localhost:3000"
+const rawOrigins = process.env.FRONTEND_URL;
+const allowedOrigins = rawOrigins
+  ? rawOrigins.split(',').map((o) => o.trim())
+  : null;
 
 app.use(
   cors({
-    origin: FRONTEND_URL ?? '*',
+    origin: allowedOrigins
+      ? (origin, cb) => {
+          // allow requests with no origin (curl, mobile apps, same-origin)
+          if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+          cb(new Error(`CORS: origin ${origin} not allowed`));
+        }
+      : '*',
     credentials: true,
   })
 );
