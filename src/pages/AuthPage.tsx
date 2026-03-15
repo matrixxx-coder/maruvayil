@@ -168,7 +168,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   onChange={handleChange}
                   autoComplete={mode === 'login' ? 'username' : 'email'}
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                  placeholder={mode === 'login' ? 'admin  or  you@example.com' : 'you@example.com'}
+                  placeholder="you@example.com"
                 />
               </div>
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
