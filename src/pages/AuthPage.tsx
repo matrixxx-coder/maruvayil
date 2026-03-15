@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
+import { Eye, EyeOff, AtSign, Lock, User, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -26,6 +26,28 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (mode === 'register') {
+      if (!form.full_name.trim()) e.full_name = 'Full name is required';
+      // Email must be a valid email address for registration
+      if (!form.email.trim()) {
+        e.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        e.email = 'Enter a valid email address';
+      }
+      if (!form.password) e.password = 'Password is required';
+      else if (form.password.length < 6) e.password = 'Password must be at least 6 characters';
+    } else {
+      // Login: accept email address OR plain user ID (any non-empty string)
+      if (!form.email.trim()) e.email = 'User ID or email is required';
+      if (!form.password) e.password = 'Password is required';
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   useEffect(() => {
     if (user) {
@@ -39,6 +61,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     setLoading(true);
 
     try {
@@ -104,11 +127,11 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                       name="full_name"
                       value={form.full_name}
                       onChange={handleChange}
-                      required
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.full_name ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                       placeholder="Your full name"
                     />
                   </div>
+                  {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
                 </div>
 
                 <div>
@@ -132,20 +155,23 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
 
             <div>
               <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
-                {t('auth.email')} *
+                {mode === 'login'
+                  ? (isMl ? 'യൂസർ ഐഡി അല്ലെങ്കിൽ ഇമെയിൽ' : 'User ID or Email')
+                  : t('auth.email')}{' '}*
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
-                  type="email"
+                  type={mode === 'login' ? 'text' : 'email'}
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
-                  placeholder="you@example.com"
+                  autoComplete={mode === 'login' ? 'username' : 'email'}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                  placeholder={mode === 'login' ? 'admin  or  you@example.com' : 'you@example.com'}
                 />
               </div>
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
             <div>
@@ -159,9 +185,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  required
-                  minLength={6}
-                  className="w-full pl-10 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                  className={`w-full pl-10 pr-12 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                   placeholder="••••••••"
                 />
                 <button
@@ -172,6 +196,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
             <button

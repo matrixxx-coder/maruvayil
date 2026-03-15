@@ -55,23 +55,29 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// POST /auth/login
+// POST /auth/login — accepts email address or plain user ID
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body as { email?: string; password?: string };
 
   if (!email || !password) {
-    res.status(400).json({ error: 'email and password are required' });
+    res.status(400).json({ error: 'User ID / email and password are required' });
     return;
   }
 
+  const identifier = email.trim();
+
   try {
+    // Match exact value first (handles plain user IDs like "admin"),
+    // then fall back to case-insensitive email match.
     const result = await query(
-      'SELECT id, email, password_hash, created_at FROM users WHERE email = $1',
-      [email.toLowerCase().trim()]
+      `SELECT id, email, password_hash, created_at FROM users
+       WHERE email = $1 OR LOWER(email) = LOWER($1)
+       LIMIT 1`,
+      [identifier]
     );
 
     if (result.rows.length === 0) {
-      res.status(401).json({ error: 'Invalid email or password' });
+      res.status(401).json({ error: 'Invalid User ID / email or password' });
       return;
     }
 
@@ -84,7 +90,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
-      res.status(401).json({ error: 'Invalid email or password' });
+      res.status(401).json({ error: 'Invalid User ID / email or password' });
       return;
     }
 
