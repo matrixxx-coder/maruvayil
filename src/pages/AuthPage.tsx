@@ -10,13 +10,7 @@ interface LocationState {
   from?: { pathname: string };
 }
 
-/** Format ISO date string (YYYY-MM-DD) to MMM-DD-YYYY */
-function formatDobDisplay(iso: string): string {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[parseInt(m, 10) - 1]}-${d}-${y}`;
-}
+const DOB_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}-\d{4}$/i;
 
 const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
   const { t, i18n } = useTranslation();
@@ -51,6 +45,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
       }
       if (!form.password) e.password = 'Password is required';
       else if (form.password.length < 6) e.password = 'Password must be at least 6 characters';
+      if (form.dob && !DOB_REGEX.test(form.dob)) e.dob = 'Use format MMM-DD-YYYY (e.g. Mar-05-1990)';
     } else {
       // Login: accept email address OR plain user ID (any non-empty string)
       if (!form.email.trim()) e.email = 'User ID or email is required';
@@ -180,17 +175,16 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     <input
-                      type="date"
+                      type="text"
                       name="dob"
                       value={form.dob}
                       onChange={handleChange}
-                      max={new Date().toISOString().split('T')[0]}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.dob ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                      placeholder="MMM-DD-YYYY"
+                      maxLength={11}
                     />
                   </div>
-                  {form.dob && (
-                    <p className="text-teal-600 text-xs mt-1">{formatDobDisplay(form.dob)}</p>
-                  )}
+                  {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
                 </div>
 
                 {/* Birth Star */}
