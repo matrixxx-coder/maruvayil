@@ -227,6 +227,26 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   </div>
                 </div>
 
+                {/* Email — register only; login email is rendered below */}
+                <div>
+                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                    {t('auth.email')} *
+                  </label>
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      autoComplete="email"
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                </div>
+
                 {/* Date of Birth */}
                 <div>
                   <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
@@ -348,27 +368,27 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
               </>
             )}
 
-            {/* Email / User ID */}
-            <div>
-              <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
-                {mode === 'login'
-                  ? (isMl ? 'യൂസർ ഐഡി അല്ലെങ്കിൽ ഇമെയിൽ' : 'User ID or Email')
-                  : t('auth.email')}{' '}*
-              </label>
-              <div className="relative">
-                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type={mode === 'login' ? 'text' : 'email'}
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  autoComplete={mode === 'login' ? 'username' : 'email'}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                  placeholder="you@example.com"
-                />
+            {/* Email / User ID — login only (register has it above after Phone) */}
+            {mode === 'login' && (
+              <div>
+                <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                  {isMl ? 'യൂസർ ഐഡി അല്ലെങ്കിൽ ഇമെയിൽ' : 'User ID or Email'} *
+                </label>
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    autoComplete="username"
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-            </div>
+            )}
 
             {/* Password */}
             <div>
