@@ -1,16 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, AtSign, Lock, User, Phone, Calendar, Star, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { BIRTH_STARS, WORLD_CITIES } from '../constants/templeData';
+import { toMalayalamDate } from '../utils/malayalamCalendar';
 
 interface LocationState {
   from?: { pathname: string };
 }
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOB_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}-\d{4}$/i;
+
+/** ISO YYYY-MM-DD → MMM-DD-YYYY */
+function isoToMmm(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${MONTHS[parseInt(m, 10) - 1]}-${d}-${y}`;
+}
+
 
 const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
   const { t, i18n } = useTranslation();
@@ -26,18 +35,34 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
     password: '',
     full_name: '',
     phone: '',
-    dob: '',          // stored as YYYY-MM-DD (from date input)
+    gender: '',
+    dob: '',
     birth_star: '',
     place_of_birth: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+
+  const datePickerRef = useRef<HTMLInputElement>(null);
+
+  // Filtered city suggestions (only when ≥ 3 chars typed)
+  const filteredCities =
+    form.place_of_birth.length >= 3
+      ? WORLD_CITIES.filter((c) =>
+          c.toLowerCase().includes(form.place_of_birth.toLowerCase())
+        ).slice(0, 8)
+      : [];
+
+  // Malayalam calendar date (shown once DoB is fully entered)
+  const mlDate = DOB_REGEX.test(form.dob) ? toMalayalamDate(form.dob) : null;
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (mode === 'register') {
       if (!form.full_name.trim()) e.full_name = 'Full name is required';
+      if (!form.gender) e.gender = 'Please select a gender';
       if (!form.email.trim()) {
         e.email = 'Email is required';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
@@ -47,7 +72,6 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
       else if (form.password.length < 6) e.password = 'Password must be at least 6 characters';
       if (form.dob && !DOB_REGEX.test(form.dob)) e.dob = 'Use format MMM-DD-YYYY (e.g. Mar-05-1990)';
     } else {
-      // Login: accept email address OR plain user ID (any non-empty string)
       if (!form.email.trim()) e.email = 'User ID or email is required';
       if (!form.password) e.password = 'Password is required';
     }
@@ -56,13 +80,22 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
   };
 
   useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true });
-    }
+    if (user) navigate(from, { replace: true });
   }, [user, navigate, from]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+    if (name === 'place_of_birth') {
+      setShowCitySuggestions(value.length >= 3);
+    }
+  };
+
+  const openDatePicker = () => {
+    const el = datePickerRef.current;
+    if (!el) return;
+    // showPicker() is available in modern browsers
+    (el as HTMLInputElement & { showPicker?: () => void }).showPicker?.() ?? el.click();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,6 +114,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
           form.password,
           form.full_name,
           form.phone || undefined,
+          form.gender || undefined,
           form.dob || undefined,
           form.birth_star || undefined,
           form.place_of_birth || undefined,
@@ -109,7 +143,8 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '';
-                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full bg-teal-700 flex items-center justify-center text-3xl">🕉️</div>';
+                  (e.target as HTMLImageElement).parentElement!.innerHTML =
+                    '<div class="w-full h-full bg-teal-700 flex items-center justify-center text-3xl">🕉️</div>';
                 }}
               />
             </div>
@@ -149,6 +184,31 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
                 </div>
 
+                {/* Gender */}
+                <div>
+                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                    {isMl ? 'ലിംഗം' : 'Gender'} *
+                  </label>
+                  <div className="flex gap-6">
+                    {['Male', 'Female'].map((g) => (
+                      <label key={g} className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value={g}
+                          checked={form.gender === g}
+                          onChange={handleChange}
+                          className="w-4 h-4 accent-teal-600"
+                        />
+                        <span className={`text-sm text-gray-700 ${isMl ? 'font-malayalam' : ''}`}>
+                          {isMl ? (g === 'Male' ? 'പുരുഷൻ' : 'സ്ത്രീ') : g}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
+                </div>
+
                 {/* Phone */}
                 <div>
                   <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
@@ -173,7 +233,16 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                     {isMl ? 'ജനനത്തീയതി' : 'Date of Birth'}
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    {/* Clickable calendar icon opens native date picker */}
+                    <button
+                      type="button"
+                      onClick={openDatePicker}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-colors z-10"
+                      tabIndex={-1}
+                      title="Open calendar"
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </button>
                     <input
                       type="text"
                       name="dob"
@@ -183,8 +252,27 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                       placeholder="MMM-DD-YYYY"
                       maxLength={11}
                     />
+                    {/* Hidden native date picker — triggered by the calendar icon */}
+                    <input
+                      ref={datePickerRef}
+                      type="date"
+                      tabIndex={-1}
+                      max={new Date().toISOString().split('T')[0]}
+                      className="absolute left-0 top-0 opacity-0 w-full h-full pointer-events-none"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setForm((f) => ({ ...f, dob: isoToMmm(e.target.value) }));
+                        }
+                      }}
+                    />
                   </div>
                   {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
+                  {/* Malayalam calendar date */}
+                  {mlDate && (
+                    <p className="font-malayalam text-teal-600 text-xs mt-1">
+                      {mlDate.display}
+                    </p>
+                  )}
                 </div>
 
                 {/* Birth Star */}
@@ -210,8 +298,8 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   </div>
                 </div>
 
-                {/* Place of Birth */}
-                <div>
+                {/* Place of Birth — custom typeahead, shows after 3 chars */}
+                <div className="relative">
                   <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
                     {isMl ? 'ജന്മസ്ഥലം' : 'Place of Birth'}
                   </label>
@@ -222,16 +310,32 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                       name="place_of_birth"
                       value={form.place_of_birth}
                       onChange={handleChange}
-                      list="cities-list"
+                      onFocus={() => form.place_of_birth.length >= 3 && setShowCitySuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
+                      autoComplete="off"
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
                       placeholder={isMl ? 'നഗരം, രാജ്യം' : 'City, Country'}
                     />
-                    <datalist id="cities-list">
-                      {WORLD_CITIES.map((city) => (
-                        <option key={city} value={city} />
-                      ))}
-                    </datalist>
                   </div>
+                  {showCitySuggestions && filteredCities.length > 0 && (
+                    <ul className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                      {filteredCities.map((city) => (
+                        <li key={city}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setForm((f) => ({ ...f, place_of_birth: city }));
+                              setShowCitySuggestions(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-800 transition-colors"
+                          >
+                            {city}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </>
             )}

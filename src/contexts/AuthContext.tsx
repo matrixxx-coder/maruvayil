@@ -13,7 +13,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, fullName: string, phone?: string, dob?: string, birthStar?: string, placeOfBirth?: string) => Promise<void>;
+  register: (email: string, password: string, fullName: string, phone?: string, gender?: string, dob?: string, birthStar?: string, placeOfBirth?: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -139,8 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (email: string, password: string, fullName: string, phone?: string, dob?: string, birthStar?: string, placeOfBirth?: string) => {
-    const { token, user: authUser } = await authApi.register(email, password, fullName, phone, dob, birthStar, placeOfBirth);
+  const register = async (email: string, password: string, fullName: string, phone?: string, gender?: string, dob?: string, birthStar?: string, placeOfBirth?: string) => {
+    const { token, user: authUser } = await authApi.register(email, password, fullName, phone, gender, dob, birthStar, placeOfBirth);
     setToken(token);
     const decoded = decodeTokenUser(token);
     setUser(decoded ?? { id: authUser.id, email: authUser.email });

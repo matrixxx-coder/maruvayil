@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   full_name_ml TEXT,     -- encrypted
   phone TEXT,            -- encrypted
   address TEXT,          -- encrypted
+  gender TEXT,           -- encrypted (Male/Female)
   dob TEXT,              -- encrypted date of birth
   birth_star TEXT,       -- encrypted
   place_of_birth TEXT,   -- encrypted
@@ -130,6 +131,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS email_hmac TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_hmac ON users(email_hmac) WHERE email_hmac IS NOT NULL;
 
 -- New profile fields
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS gender TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dob TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_star TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS place_of_birth TEXT;

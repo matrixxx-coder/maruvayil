@@ -72,6 +72,7 @@ export interface MeResponse {
     fullNameMl: string | null;
     phone: string | null;
     address: string | null;
+    gender: string | null;
     dob: string | null;
     birthStar: string | null;
     placeOfBirth: string | null;
@@ -87,12 +88,13 @@ export const authApi = {
     password: string,
     fullName: string,
     phone?: string,
+    gender?: string,
     dob?: string,
     birthStar?: string,
     placeOfBirth?: string
   ): Promise<AuthResponse> {
     return apiRequest<AuthResponse>('POST', '/auth/register', {
-      email, password, fullName, phone, dob, birthStar, placeOfBirth,
+      email, password, fullName, phone, gender, dob, birthStar, placeOfBirth,
     });
   },
   login(email: string, password: string): Promise<AuthResponse> {
@@ -111,6 +113,7 @@ export interface ProfileData {
   full_name_ml: string | null;
   phone: string | null;
   address: string | null;
+  gender: string | null;
   dob: string | null;
   birth_star: string | null;
   place_of_birth: string | null;
@@ -124,6 +127,7 @@ export interface ProfileUpdateInput {
   fullNameMl?: string;
   phone?: string;
   address?: string;
+  gender?: string;
   dob?: string;
   birthStar?: string;
   placeOfBirth?: string;

@@ -14,11 +14,12 @@ function signToken(userId: string): string {
 
 // POST /auth/register
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { email, password, fullName, phone, dob, birthStar, placeOfBirth } = req.body as {
+  const { email, password, fullName, phone, gender, dob, birthStar, placeOfBirth } = req.body as {
     email?: string;
     password?: string;
     fullName?: string;
     phone?: string;
+    gender?: string;
     dob?: string;
     birthStar?: string;
     placeOfBirth?: string;
@@ -42,11 +43,12 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     const user = userResult.rows[0] as { id: string; email: string; created_at: string };
 
     await query(
-      'INSERT INTO profiles (id, full_name, phone, dob, birth_star, place_of_birth) VALUES ($1, $2, $3, $4, $5, $6)',
+      'INSERT INTO profiles (id, full_name, phone, gender, dob, birth_star, place_of_birth) VALUES ($1, $2, $3, $4, $5, $6, $7)',
       [
         user.id,
         encryptNullable(fullName),
         encryptNullable(phone ?? null),
+        encryptNullable(gender ?? null),
         encryptNullable(dob ?? null),
         encryptNullable(birthStar ?? null),
         encryptNullable(placeOfBirth ?? null),
@@ -124,7 +126,7 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
     const result = await query(
       `SELECT u.id, u.email, u.created_at,
               p.full_name, p.full_name_ml, p.phone, p.address,
-              p.dob, p.place_of_birth,
+              p.gender, p.dob, p.birth_star, p.place_of_birth,
               p.is_active_member, p.member_since, p.is_admin
        FROM users u
        LEFT JOIN profiles p ON p.id = u.id
@@ -145,7 +147,9 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
       full_name_ml: string | null;
       phone: string | null;
       address: string | null;
+      gender: string | null;
       dob: string | null;
+      birth_star: string | null;
       place_of_birth: string | null;
       is_active_member: boolean;
       member_since: string;
@@ -161,7 +165,9 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
         fullNameMl: decryptNullable(row.full_name_ml),
         phone: decryptNullable(row.phone),
         address: decryptNullable(row.address),
+        gender: decryptNullable(row.gender),
         dob: decryptNullable(row.dob),
+        birthStar: decryptNullable(row.birth_star),
         placeOfBirth: decryptNullable(row.place_of_birth),
         isActiveMember: row.is_active_member,
         memberSince: row.member_since,
