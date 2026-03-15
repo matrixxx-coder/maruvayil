@@ -127,6 +127,7 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
       `SELECT u.id, u.email, u.created_at,
               p.full_name, p.full_name_ml, p.phone, p.address,
               p.gender, p.dob, p.birth_star, p.place_of_birth,
+              p.facebook, p.instagram,
               p.is_active_member, p.member_since, p.is_admin
        FROM users u
        LEFT JOIN profiles p ON p.id = u.id
@@ -151,6 +152,8 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
       dob: string | null;
       birth_star: string | null;
       place_of_birth: string | null;
+      facebook: string | null;
+      instagram: string | null;
       is_active_member: boolean;
       member_since: string;
       is_admin: boolean;
@@ -169,6 +172,8 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
         dob: decryptNullable(row.dob),
         birthStar: decryptNullable(row.birth_star),
         placeOfBirth: decryptNullable(row.place_of_birth),
+        facebook: decryptNullable(row.facebook),
+        instagram: decryptNullable(row.instagram),
         isActiveMember: row.is_active_member,
         memberSince: row.member_since,
         isAdmin: row.is_admin ?? false,

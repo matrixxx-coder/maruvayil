@@ -14,6 +14,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const result = await query(
       `SELECT id, full_name, full_name_ml, phone, address,
               gender, dob, birth_star, place_of_birth,
+              facebook, instagram,
               is_active_member, member_since, created_at
        FROM profiles WHERE id = $1`,
       [req.userId]
@@ -34,6 +35,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       dob: string | null;
       birth_star: string | null;
       place_of_birth: string | null;
+      facebook: string | null;
+      instagram: string | null;
       is_active_member: boolean;
       member_since: string;
       created_at: string;
@@ -49,6 +52,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       dob: decryptNullable(row.dob),
       birth_star: decryptNullable(row.birth_star),
       place_of_birth: decryptNullable(row.place_of_birth),
+      facebook: decryptNullable(row.facebook),
+      instagram: decryptNullable(row.instagram),
       is_active_member: row.is_active_member,
       member_since: row.member_since,
       created_at: row.created_at,
@@ -61,7 +66,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
 // PUT /profile
 router.put('/', async (req: Request, res: Response): Promise<void> => {
-  const { fullName, fullNameMl, phone, address, gender, dob, birthStar, placeOfBirth } = req.body as {
+  const { fullName, fullNameMl, phone, address, gender, dob, birthStar, placeOfBirth, facebook, instagram } = req.body as {
     fullName?: string;
     fullNameMl?: string;
     phone?: string;
@@ -70,6 +75,8 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
     dob?: string;
     birthStar?: string;
     placeOfBirth?: string;
+    facebook?: string;
+    instagram?: string;
   };
 
   try {
@@ -82,10 +89,13 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
            gender         = COALESCE($5, gender),
            dob            = COALESCE($6, dob),
            birth_star     = COALESCE($7, birth_star),
-           place_of_birth = COALESCE($8, place_of_birth)
-       WHERE id = $9
+           place_of_birth = COALESCE($8, place_of_birth),
+           facebook       = COALESCE($9, facebook),
+           instagram      = COALESCE($10, instagram)
+       WHERE id = $11
        RETURNING id, full_name, full_name_ml, phone, address,
                  gender, dob, birth_star, place_of_birth,
+                 facebook, instagram,
                  is_active_member, member_since, created_at`,
       [
         encryptNullable(fullName ?? null),
@@ -96,6 +106,8 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
         encryptNullable(dob ?? null),
         encryptNullable(birthStar ?? null),
         encryptNullable(placeOfBirth ?? null),
+        facebook !== undefined ? encryptNullable(facebook || null) : null,
+        instagram !== undefined ? encryptNullable(instagram || null) : null,
         req.userId,
       ]
     );
@@ -115,6 +127,8 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
       dob: string | null;
       birth_star: string | null;
       place_of_birth: string | null;
+      facebook: string | null;
+      instagram: string | null;
       is_active_member: boolean;
       member_since: string;
       created_at: string;
@@ -130,6 +144,8 @@ router.put('/', async (req: Request, res: Response): Promise<void> => {
       dob: decryptNullable(row.dob),
       birth_star: decryptNullable(row.birth_star),
       place_of_birth: decryptNullable(row.place_of_birth),
+      facebook: decryptNullable(row.facebook),
+      instagram: decryptNullable(row.instagram),
       is_active_member: row.is_active_member,
       member_since: row.member_since,
       created_at: row.created_at,

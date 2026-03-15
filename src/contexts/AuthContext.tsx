@@ -65,6 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_active_member: data.is_active_member,
         member_since: data.member_since,
         created_at: data.created_at,
+        facebook: data.facebook,
+        instagram: data.instagram,
       });
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -100,6 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           is_active_member: me.profile.isActiveMember,
           member_since: me.profile.memberSince,
           created_at: me.createdAt,
+          facebook: me.profile.facebook ?? null,
+          instagram: me.profile.instagram ?? null,
         });
       } catch {
         // Token is invalid or expired — clear it
@@ -133,6 +137,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_active_member: me.profile.isActiveMember,
         member_since: me.profile.memberSince,
         created_at: me.createdAt,
+        facebook: me.profile.facebook ?? null,
+        instagram: me.profile.instagram ?? null,
       });
     } catch (err) {
       console.error('Profile fetch after login failed:', err);

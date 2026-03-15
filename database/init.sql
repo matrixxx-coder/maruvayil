@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   dob TEXT,              -- encrypted date of birth
   birth_star TEXT,       -- encrypted
   place_of_birth TEXT,   -- encrypted
+  facebook TEXT,         -- encrypted Facebook username
+  instagram TEXT,        -- encrypted Instagram username
   is_active_member BOOLEAN DEFAULT FALSE,
   member_since TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -135,6 +137,8 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS gender TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dob TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_star TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS place_of_birth TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS facebook TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS instagram TEXT;
 
 -- family_members.birth_date was DATE; add a TEXT column for the encrypted value
 -- (old DATE column is kept so no existing data is lost)

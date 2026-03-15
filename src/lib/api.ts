@@ -76,6 +76,8 @@ export interface MeResponse {
     dob: string | null;
     birthStar: string | null;
     placeOfBirth: string | null;
+    facebook: string | null;
+    instagram: string | null;
     isActiveMember: boolean;
     memberSince: string;
     isAdmin: boolean;
@@ -117,6 +119,8 @@ export interface ProfileData {
   dob: string | null;
   birth_star: string | null;
   place_of_birth: string | null;
+  facebook: string | null;
+  instagram: string | null;
   is_active_member: boolean;
   member_since: string;
   created_at: string;
@@ -131,6 +135,8 @@ export interface ProfileUpdateInput {
   dob?: string;
   birthStar?: string;
   placeOfBirth?: string;
+  facebook?: string;
+  instagram?: string;
 }
 
 export const profileApi = {

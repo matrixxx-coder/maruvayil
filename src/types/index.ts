@@ -7,6 +7,8 @@ export interface Profile {
   member_since: string;
   is_active_member: boolean;
   created_at: string;
+  facebook: string | null;
+  instagram: string | null;
 }
 
 export interface FamilyMember {
