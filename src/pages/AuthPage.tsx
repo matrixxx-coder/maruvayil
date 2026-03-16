@@ -438,6 +438,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   value={form.password}
                   onChange={handleChange}
                   onKeyDown={handleLoginKeyDown}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   className={`w-full pl-10 pr-12 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                   placeholder="••••••••"
                 />
