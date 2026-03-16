@@ -437,12 +437,12 @@ router.get('/tree', async (_req: Request, res: Response): Promise<void> => {
 router.post('/tree', async (req: Request, res: Response): Promise<void> => {
   const {
     full_name, full_name_ml, gender, dob, birth_star, place_of_birth,
-    phone, email, role, notes, parent_id, display_order,
+    phone, email, role, notes, parent_id, display_order, photo,
   } = req.body as {
     full_name?: string; full_name_ml?: string; gender?: string;
     dob?: string; birth_star?: string; place_of_birth?: string;
     phone?: string; email?: string; role?: string; notes?: string;
-    parent_id?: string | null; display_order?: number;
+    parent_id?: string | null; display_order?: number; photo?: string | null;
   };
 
   if (!full_name) {
@@ -454,14 +454,14 @@ router.post('/tree', async (req: Request, res: Response): Promise<void> => {
     const result = await query(
       `INSERT INTO tree_members
          (full_name, full_name_ml, gender, dob, birth_star, place_of_birth,
-          phone, email, role, notes, parent_id, display_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+          phone, email, role, notes, parent_id, display_order, photo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING *`,
       [
         full_name, full_name_ml ?? null, gender ?? null, dob ?? null,
         birth_star ?? null, place_of_birth ?? null, phone ?? null,
         email ?? null, role ?? 'Devotee', notes ?? null,
-        parent_id ?? null, display_order ?? 0,
+        parent_id ?? null, display_order ?? 0, photo ?? null,
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -476,12 +476,12 @@ router.put('/tree/:id', async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const {
     full_name, full_name_ml, gender, dob, birth_star, place_of_birth,
-    phone, email, role, notes, parent_id, display_order,
+    phone, email, role, notes, parent_id, display_order, photo,
   } = req.body as {
     full_name?: string; full_name_ml?: string; gender?: string;
     dob?: string; birth_star?: string; place_of_birth?: string;
     phone?: string; email?: string; role?: string; notes?: string;
-    parent_id?: string | null; display_order?: number;
+    parent_id?: string | null; display_order?: number; photo?: string | null;
   };
 
   try {
@@ -498,15 +498,16 @@ router.put('/tree/:id', async (req: Request, res: Response): Promise<void> => {
          role           = COALESCE($9, role),
          notes          = $10,
          parent_id      = $11,
-         display_order  = COALESCE($12, display_order)
-       WHERE id = $13
+         display_order  = COALESCE($12, display_order),
+         photo          = COALESCE($13, photo)
+       WHERE id = $14
        RETURNING *`,
       [
         full_name ?? null, full_name_ml ?? null, gender ?? null,
         dob ?? null, birth_star ?? null, place_of_birth ?? null,
         phone ?? null, email ?? null, role ?? null, notes ?? null,
         parent_id !== undefined ? parent_id : null,
-        display_order ?? null, id,
+        display_order ?? null, photo !== undefined ? photo : null, id,
       ]
     );
 

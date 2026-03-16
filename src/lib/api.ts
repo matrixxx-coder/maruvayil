@@ -292,6 +292,7 @@ export interface TreeMember {
   parent_id: string | null;
   display_order: number;
   created_at: string;
+  photo: string | null;
 }
 
 export interface TreeMemberInput {
@@ -307,6 +308,7 @@ export interface TreeMemberInput {
   notes?: string | null;
   parent_id?: string | null;
   display_order?: number;
+  photo?: string | null;
 }
 
 export const treeApi = {

@@ -172,3 +172,6 @@ ALTER TABLE tree_members ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 
 -- Family member extra fields
 ALTER TABLE family_members ADD COLUMN IF NOT EXISTS gender TEXT;
 ALTER TABLE family_members ADD COLUMN IF NOT EXISTS place_of_birth TEXT;
+
+-- Family tree member photo (base64 data URL)
+ALTER TABLE tree_members ADD COLUMN IF NOT EXISTS photo TEXT;
