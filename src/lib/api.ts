@@ -270,3 +270,45 @@ export const adminApi = {
   purgeTestUsers: () =>
     apiRequest<{ deleted: number; message?: string }>('DELETE', '/admin/members/purge-test'),
 };
+
+// ---- Family Tree API (admin) ----
+
+export interface TreeMember {
+  id: string;
+  full_name: string;
+  full_name_ml: string | null;
+  gender: string | null;
+  dob: string | null;
+  birth_star: string | null;
+  place_of_birth: string | null;
+  phone: string | null;
+  email: string | null;
+  role: string;
+  notes: string | null;
+  parent_id: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface TreeMemberInput {
+  full_name: string;
+  full_name_ml?: string | null;
+  gender?: string | null;
+  dob?: string | null;
+  birth_star?: string | null;
+  place_of_birth?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  role?: string;
+  notes?: string | null;
+  parent_id?: string | null;
+  display_order?: number;
+}
+
+export const treeApi = {
+  list: () => apiRequest<TreeMember[]>('GET', '/admin/tree'),
+  create: (data: TreeMemberInput) => apiRequest<TreeMember>('POST', '/admin/tree', data),
+  update: (id: string, data: Partial<TreeMemberInput>) =>
+    apiRequest<TreeMember>('PUT', `/admin/tree/${id}`, data),
+  remove: (id: string) => apiRequest<void>('DELETE', `/admin/tree/${id}`),
+};

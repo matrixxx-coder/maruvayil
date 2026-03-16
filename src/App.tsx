@@ -18,6 +18,7 @@ import ContentEditor from './pages/admin/ContentEditor';
 import AnnouncementsEditor from './pages/admin/AnnouncementsEditor';
 import CommitteeEditor from './pages/admin/CommitteeEditor';
 import MembersManager from './pages/admin/MembersManager';
+import FamilyTree from './pages/admin/FamilyTree';
 
 // Layout wrapper for public pages (with navbar + footer)
 const PublicLayout = () => (
@@ -123,6 +124,7 @@ const App: React.FC = () => {
             <Route path="announcements" element={<AnnouncementsEditor />} />
             <Route path="committee" element={<CommitteeEditor />} />
             <Route path="members" element={<MembersManager />} />
+            <Route path="family-tree" element={<FamilyTree />} />
           </Route>
 
           {/* 404 */}

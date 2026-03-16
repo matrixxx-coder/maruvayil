@@ -147,3 +147,24 @@ ALTER TABLE family_members ADD COLUMN IF NOT EXISTS birth_date_enc TEXT;
 
 -- Member roles
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'Devotee';
+
+-- Family tree managed by admin
+CREATE TABLE IF NOT EXISTS tree_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name TEXT NOT NULL,
+  full_name_ml TEXT,
+  gender TEXT,
+  dob TEXT,              -- MMM-DD-YYYY format
+  birth_star TEXT,
+  place_of_birth TEXT,
+  phone TEXT,
+  email TEXT,
+  role TEXT DEFAULT 'Devotee',
+  notes TEXT,
+  parent_id UUID REFERENCES tree_members(id) ON DELETE SET NULL,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Migration for existing databases
+ALTER TABLE tree_members ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;

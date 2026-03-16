@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, FileText, Bell, Users, UserCog, Menu, X } from 'lucide-react';
+import { LayoutDashboard, FileText, Bell, Users, UserCog, Menu, X, GitBranch } from 'lucide-react';
 
 const navItems = [
   { to: '/admin/content', label: 'Content Blocks', icon: FileText },
   { to: '/admin/announcements', label: 'Announcements', icon: Bell },
   { to: '/admin/committee', label: 'Committee', icon: Users },
   { to: '/admin/members', label: 'Members', icon: UserCog },
+  { to: '/admin/family-tree', label: 'Family Tree', icon: GitBranch },
 ];
 
 const AdminLayout: React.FC = () => {
