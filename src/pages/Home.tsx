@@ -85,7 +85,7 @@ const Home: React.FC = () => {
 
             {/* Malayalam subtitle */}
             <p className="font-malayalam text-teal-200 text-lg mb-8">
-              മറുവയൽ ശ്രീ ശിവ പാർവതി കുടുംബ ക്ഷേത്രം
+              മറുവയിൽ ശ്രീ ശിവ പാർവതി കുടുംബ ക്ഷേത്രം
             </p>
 
             {/* CTA buttons */}

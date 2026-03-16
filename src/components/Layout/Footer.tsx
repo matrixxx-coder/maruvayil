@@ -44,7 +44,7 @@ const Footer: React.FC = () => {
               {t('footer.tagline')}
             </p>
             <p className="text-teal-400 text-xs font-malayalam">
-              മറുവയൽ ശ്രീ ശിവ പാർവതി കുടുംബ ക്ഷേത്രം
+              മറുവയിൽ ശ്രീ ശിവ പാർവതി കുടുംബ ക്ഷേത്രം
             </p>
           </div>
 

@@ -37,7 +37,7 @@ const TempleDetails: React.FC = () => {
             {t('temple.title')}
           </h1>
           <p className="font-malayalam text-teal-200">
-            മറുവയൽ ശ്രീ ശിവ പാർവതി കുടുംബ ക്ഷേത്രം
+            മറുവയിൽ ശ്രീ ശിവ പാർവതി കുടുംബ ക്ഷേത്രം
           </p>
         </div>
       </div>

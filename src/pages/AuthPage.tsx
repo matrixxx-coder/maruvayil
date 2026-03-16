@@ -169,7 +169,7 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
             {mode === 'login' ? t('auth.login_subtitle') : t('auth.register_subtitle')}
           </p>
           <p className="font-malayalam text-teal-600 text-sm mt-1">
-            മറുവയൽ ശ്രീ ശിവ പാർവതി ക്ഷേത്രം
+            മറുവയിൽ ശ്രീ ശിവ പാർവതി ക്ഷേത്രം
           </p>
         </div>
 
