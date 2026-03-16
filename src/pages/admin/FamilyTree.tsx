@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { UserPlus, Pencil, Trash2, UserRoundPlus, ChevronUp, ChevronDown, X, Check, Star, MapPin, Phone, AtSign, Calendar } from 'lucide-react';
+import { UserPlus, Pencil, Trash2, UserRoundPlus, ChevronUp, ChevronDown, X, Check, Star, MapPin, Phone, AtSign, Calendar, User } from 'lucide-react';
 import { treeApi, TreeMember, TreeMemberInput } from '../../lib/api';
 import { BIRTH_STARS, WORLD_CITIES } from '../../constants/templeData';
 
@@ -101,7 +101,7 @@ const AddEditModal: React.FC<ModalProps> = ({ initial, title, saving, onSave, on
   };
 
   const inputCls = 'w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition';
-  const iconInputCls = 'w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition';
+  const iconInputCls = 'w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
@@ -121,14 +121,17 @@ const AddEditModal: React.FC<ModalProps> = ({ initial, title, saving, onSave, on
           {/* Full Name */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Full Name *</label>
-            <input
-              type="text"
-              value={form.full_name}
-              onChange={(e) => set('full_name', e.target.value)}
-              className={inputCls}
-              placeholder="Full name in English"
-              autoFocus
-            />
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={form.full_name}
+                onChange={(e) => set('full_name', e.target.value)}
+                className={iconInputCls}
+                placeholder="Full name in English"
+                autoFocus
+              />
+            </div>
           </div>
 
           {/* Full Name Malayalam */}
