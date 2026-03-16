@@ -7,11 +7,11 @@ import { contentApi, Announcement } from '../lib/api';
 const IMAGE_BASE = 'https://maruvayiltemple.weebly.com/uploads/1/2/6/7/126797572/';
 
 const deities = [
-  { name: 'Paradevata', ml: 'പരദേവത', icon: '🙏' },
-  { name: 'Ganapathi', ml: 'ഗണപതി', icon: '🐘' },
-  { name: 'Nagaraja', ml: 'നാഗരാജ', icon: '🐍' },
-  { name: 'Subrahmanya Swami', ml: 'സുബ്രഹ്മണ്യ സ്വാമി', icon: '✨' },
-  { name: 'Ayyapa Swami', ml: 'അയ്യപ്പ സ്വാമി', icon: '🌟' },
+  { name: 'Paradevata', ml: 'പരദേവത', icon: '🙏', image: '/paradevata3.png' },
+  { name: 'Ganapathi', ml: 'ഗണപതി', icon: '🐘', image: '/ganapathi2.png' },
+  { name: 'Nagaraja', ml: 'നാഗരാജ', icon: '🐍', image: '/nagaraja2.png' },
+  { name: 'Subrahmanya Swami', ml: 'സുബ്രഹ്മണ്യ സ്വാമി', icon: '✨', image: '/murugan2.png' },
+  { name: 'Ayyapa Swami', ml: 'അയ്യപ്പ സ്വാമി', icon: '🌟', image: '/ayyappa.png' },
 ];
 
 const featuredImages = [
@@ -238,7 +238,13 @@ const Home: React.FC = () => {
               key={deity.name}
               className="bg-white rounded-2xl p-5 text-center shadow-sm border border-amber-100 hover:shadow-md hover:border-gold-200 transition-all"
             >
-              <div className="text-4xl mb-3">{deity.icon}</div>
+              {deity.image ? (
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full overflow-hidden border-2 border-amber-200 bg-amber-50">
+                  <img src={deity.image} alt={deity.name} className="w-full h-full object-contain p-0.5" />
+                </div>
+              ) : (
+                <div className="text-4xl mb-3">{deity.icon}</div>
+              )}
               <p className="font-semibold text-teal-800 text-sm">{deity.name}</p>
               <p className="font-malayalam text-teal-600 text-xs mt-1">{deity.ml}</p>
             </div>

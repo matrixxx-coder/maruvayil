@@ -32,11 +32,11 @@ const DEVOTEE_FORMS = [
 ];
 
 const deities = [
-  { icon: '🙏', en: 'Paradevata', ml: 'പരദേവത', desc: 'Principal Deity' },
-  { icon: '🐘', en: 'Ganapathi', ml: 'ഗണപതി', desc: 'Lord of Beginnings' },
-  { icon: '🐍', en: 'Nagaraja', ml: 'നാഗരാജ', desc: 'Serpent King' },
-  { icon: '✨', en: 'Subrahmanya Swami', ml: 'സുബ്രഹ്മണ്യ സ്വാമി', desc: 'God of War & Wisdom' },
-  { icon: '🌟', en: 'Ayyapa Swami', ml: 'അയ്യപ്പ സ്വാമി', desc: 'Lord Ayyapa' },
+  { icon: '🙏', image: '/paradevata3.png', en: 'Paradevata', ml: 'പരദേവത', desc: 'Principal Deity' },
+  { icon: '🐘', image: '/ganapathi2.png', en: 'Ganapathi', ml: 'ഗണപതി', desc: 'Lord of Beginnings' },
+  { icon: '🐍', image: '/nagaraja2.png', en: 'Nagaraja', ml: 'നാഗരാജ', desc: 'Serpent King' },
+  { icon: '✨', image: '/murugan2.png', en: 'Subrahmanya Swami', ml: 'സുബ്രഹ്മണ്യ സ്വാമി', desc: 'God of War & Wisdom' },
+  { icon: '🌟', image: '/ayyappa.png', en: 'Ayyapa Swami', ml: 'അയ്യപ്പ സ്വാമി', desc: 'Lord Ayyapa' },
 ];
 
 const Pooja: React.FC = () => {
@@ -228,7 +228,13 @@ const Pooja: React.FC = () => {
               <div className="space-y-3">
                 {deities.map((deity) => (
                   <div key={deity.en} className="flex items-center gap-4 p-4 rounded-xl bg-teal-50 border border-teal-100">
-                    <span className="text-3xl">{deity.icon}</span>
+                    {deity.image ? (
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-amber-200 flex-shrink-0 bg-amber-50">
+                        <img src={deity.image} alt={deity.en} className="w-full h-full object-contain p-0.5" />
+                      </div>
+                    ) : (
+                      <span className="text-3xl">{deity.icon}</span>
+                    )}
                     <div>
                       <p className="font-semibold text-teal-800">{deity.en}</p>
                       <p className="font-malayalam text-teal-600 text-sm">{deity.ml}</p>
