@@ -43,11 +43,6 @@ function avatarColor(name: string): string {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-const ROLE_BADGE: Record<string, string> = {
-  Trustee: 'bg-amber-100 text-amber-700',
-  'Family Member': 'bg-blue-100 text-blue-700',
-  Devotee: 'bg-gray-100 text-gray-600',
-};
 
 const MONTHS_LIST = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -284,20 +279,6 @@ const AddEditModal: React.FC<ModalProps> = ({ initial, title, saving, onSave, on
             )}
           </div>
 
-          {/* Role */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Role</label>
-            <select
-              value={form.role ?? 'Devotee'}
-              onChange={(e) => set('role', e.target.value)}
-              className={`${inputCls} bg-white`}
-            >
-              <option value="Devotee">Devotee</option>
-              <option value="Family Member">Family Member</option>
-              <option value="Trustee">Trustee</option>
-            </select>
-          </div>
-
           {/* Notes */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Notes</label>
@@ -349,11 +330,10 @@ const MemberCard: React.FC<CardProps> = ({ member, onAddChild, onAddParent, onEd
   const age = calcAge(member.dob);
   const initials = getInitials(member.full_name);
   const color = avatarColor(member.full_name);
-  const badgeCls = ROLE_BADGE[member.role] ?? ROLE_BADGE.Devotee;
   const hasParent = !!member.parent_id;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm w-48 flex flex-col items-center p-4 gap-2 hover:shadow-md transition-shadow">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm w-52 flex flex-col items-center p-4 gap-2.5 hover:shadow-md transition-shadow">
       {/* Avatar */}
       <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold ${color} ring-2 ring-white shadow`}>
         {initials}
@@ -362,53 +342,47 @@ const MemberCard: React.FC<CardProps> = ({ member, onAddChild, onAddParent, onEd
       {/* Name */}
       <div className="text-center">
         <p className="text-sm font-semibold text-gray-800 leading-tight">{member.full_name}</p>
-        {member.full_name_ml && (
-          <p className="font-malayalam text-xs text-gray-500 mt-0.5">{member.full_name_ml}</p>
+        <div className="flex items-center justify-center gap-1.5 mt-1 flex-wrap">
+          {member.gender && (
+            <span className="text-xs text-gray-400">{member.gender === 'Male' ? '♂ Male' : '♀ Female'}</span>
+          )}
+          {age !== null && member.gender && <span className="text-gray-300 text-xs">·</span>}
+          {age !== null && (
+            <span className="text-xs text-gray-400">{age} yrs</span>
+          )}
+        </div>
+        {member.birth_star && (
+          <p className="text-xs text-teal-600 mt-0.5">✦ {member.birth_star}</p>
         )}
       </div>
-
-      {/* Age / Gender row */}
-      <div className="flex items-center gap-2 flex-wrap justify-center">
-        {age !== null && (
-          <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full">
-            {age} yrs
-          </span>
-        )}
-        {member.gender && (
-          <span className="text-xs text-gray-500">{member.gender === 'Male' ? '♂' : '♀'}</span>
-        )}
-      </div>
-
-      {/* Role badge */}
-      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeCls}`}>
-        {member.role}
-      </span>
 
       {/* Actions */}
-      <div className="flex flex-col gap-1 w-full mt-1">
-        <div className="flex gap-1">
-          <button
-            onClick={onAddChild}
-            title="Add child"
-            className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors font-medium"
-          >
-            <ChevronDown className="w-3.5 h-3.5" />
-            Child
-          </button>
+      <div className="w-full border-t border-gray-100 pt-2.5 mt-0.5 space-y-1.5">
+        {/* Add relations */}
+        <div className="flex gap-1.5">
           <button
             onClick={onAddParent}
             disabled={hasParent}
-            title={hasParent ? 'Already has a parent' : 'Add parent'}
-            className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            title={hasParent ? 'Already has a parent' : 'Add parent above this node'}
+            className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronUp className="w-3.5 h-3.5" />
-            Parent
+            Add Parent
+          </button>
+          <button
+            onClick={onAddChild}
+            title="Add a child below this node"
+            className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors font-medium"
+          >
+            <ChevronDown className="w-3.5 h-3.5" />
+            Add Child
           </button>
         </div>
-        <div className="flex gap-1">
+        {/* Edit / Delete */}
+        <div className="flex gap-1.5">
           <button
             onClick={onEdit}
-            title="Edit"
+            title="Edit this member"
             className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <Pencil className="w-3 h-3" />
@@ -416,11 +390,11 @@ const MemberCard: React.FC<CardProps> = ({ member, onAddChild, onAddParent, onEd
           </button>
           <button
             onClick={onDelete}
-            title="Delete"
-            className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+            title="Delete this member"
+            className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
           >
             <Trash2 className="w-3 h-3" />
-            Del
+            Delete
           </button>
         </div>
       </div>
