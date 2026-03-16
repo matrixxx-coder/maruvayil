@@ -134,20 +134,6 @@ const AddEditModal: React.FC<ModalProps> = ({ initial, title, saving, onSave, on
             </div>
           </div>
 
-          {/* Full Name Malayalam */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
-              Full Name <span className="font-malayalam normal-case">( മലയാളം )</span>
-            </label>
-            <input
-              type="text"
-              value={form.full_name_ml ?? ''}
-              onChange={(e) => set('full_name_ml', e.target.value)}
-              className={`${inputCls} font-malayalam`}
-              placeholder="മലയാളം"
-            />
-          </div>
-
           {/* Gender */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Gender</label>

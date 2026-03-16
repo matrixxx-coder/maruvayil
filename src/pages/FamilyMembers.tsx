@@ -405,21 +405,6 @@ const FamilyMembers: React.FC = () => {
                 </div>
               </div>
 
-              {/* Full Name Malayalam */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5 font-malayalam">
-                  {t('family.name_malayalam')}
-                </label>
-                <input
-                  type="text"
-                  name="name_malayalam"
-                  value={form.name_malayalam}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm font-malayalam"
-                  placeholder="മലയാളത്തിൽ"
-                />
-              </div>
-
               {/* Relationship */}
               <div>
                 <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
