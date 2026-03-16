@@ -379,26 +379,6 @@ const AuthPage: React.FC<{ mode: 'login' | 'register' }> = ({ mode }) => {
                   )}
                 </div>
 
-                {/* Role */}
-                <div>
-                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
-                    {isMl ? 'പദവി' : 'Role'}
-                  </label>
-                  <select
-                    name="role"
-                    value={form.role}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition bg-white"
-                  >
-                    <option value="Devotee">{isMl ? 'ഭക്തൻ / ഭക്ത (Devotee)' : 'Devotee'}</option>
-                    <option value="Family Member">{isMl ? 'കുടുംബാംഗം (Family Member)' : 'Family Member'}</option>
-                  </select>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {isMl
-                      ? 'ട്രസ്റ്റി പദവി അഡ്മിൻ നൽകുന്നതാണ്'
-                      : 'Trustee role is assigned by an administrator'}
-                  </p>
-                </div>
               </>
             )}
 
