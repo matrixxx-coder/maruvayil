@@ -164,6 +164,8 @@ export interface FamilyMemberData {
   rashi: string | null;
   notes: string | null;
   include_in_pooja: boolean;
+  gender: string | null;
+  place_of_birth: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -177,6 +179,8 @@ export interface FamilyMemberInput {
   rashi?: string | null;
   notes?: string | null;
   includeInPooja?: boolean;
+  gender?: string | null;
+  placeOfBirth?: string | null;
 }
 
 export const familyApi = {

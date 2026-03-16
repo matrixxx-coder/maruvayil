@@ -1,17 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Trash2, X, Check, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Check, Users, User, Star, MapPin, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { familyApi } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { FamilyMember, NAKSHATRAS, RASHIS, RELATIONSHIPS, Relationship } from '../types';
+import { BIRTH_STARS, WORLD_CITIES } from '../constants/templeData';
+import { toMalayalamDate } from '../utils/malayalamCalendar';
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOB_REGEX = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}-\d{4}$/i;
+
+function isoToMmm(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${MONTHS[parseInt(m, 10) - 1]}-${d}-${y}`;
+}
 
 const emptyForm = {
   name: '',
   name_malayalam: '',
   relationship: 'self' as Relationship,
+  gender: '',
   birth_date: '',
   birth_star: '',
+  place_of_birth: '',
   rashi: '',
   notes: '',
   include_in_pooja: true,
@@ -30,6 +42,21 @@ const FamilyMembers: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const datePickerRef = useRef<HTMLInputElement>(null);
+
+  const filteredCities =
+    form.place_of_birth.length >= 3
+      ? WORLD_CITIES.filter((c) => c.toLowerCase().includes(form.place_of_birth.toLowerCase())).slice(0, 8)
+      : [];
+
+  const mlDate = DOB_REGEX.test(form.birth_date) ? toMalayalamDate(form.birth_date) : null;
+
+  const openDatePicker = () => {
+    const el = datePickerRef.current;
+    if (!el) return;
+    (el as HTMLInputElement & { showPicker?: () => void }).showPicker?.() ?? el.click();
+  };
 
   useEffect(() => {
     if (user) fetchMembers();
@@ -57,8 +84,10 @@ const FamilyMembers: React.FC = () => {
       name: member.name,
       name_malayalam: member.name_malayalam || '',
       relationship: member.relationship,
+      gender: (member as FamilyMember & { gender?: string }).gender || '',
       birth_date: member.birth_date || '',
       birth_star: member.birth_star || '',
+      place_of_birth: (member as FamilyMember & { place_of_birth?: string }).place_of_birth || '',
       rashi: member.rashi || '',
       notes: member.notes || '',
       include_in_pooja: member.include_in_pooja,
@@ -92,8 +121,10 @@ const FamilyMembers: React.FC = () => {
           name: form.name,
           nameMalayalam: form.name_malayalam || null,
           relationship: form.relationship,
+          gender: form.gender || null,
           birthDate: form.birth_date || null,
           birthStar: form.birth_star || null,
+          placeOfBirth: form.place_of_birth || null,
           rashi: form.rashi || null,
           notes: form.notes || null,
           includeInPooja: form.include_in_pooja,
@@ -104,8 +135,10 @@ const FamilyMembers: React.FC = () => {
           name: form.name,
           nameMalayalam: form.name_malayalam || null,
           relationship: form.relationship,
+          gender: form.gender || null,
           birthDate: form.birth_date || null,
           birthStar: form.birth_star || null,
+          placeOfBirth: form.place_of_birth || null,
           rashi: form.rashi || null,
           notes: form.notes || null,
           includeInPooja: form.include_in_pooja,
@@ -352,36 +385,39 @@ const FamilyMembers: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* Name */}
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
-                    {t('family.name')} *
-                  </label>
+            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5 max-h-[75vh] overflow-y-auto">
+              {/* Full Name */}
+              <div>
+                <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                  {t('family.name')} *
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   <input
                     type="text"
                     name="name"
                     value={form.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm"
                     placeholder="Full name"
                   />
                 </div>
-                <div>
-                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 font-malayalam`}>
-                    {t('family.name_malayalam')}
-                  </label>
-                  <input
-                    type="text"
-                    name="name_malayalam"
-                    value={form.name_malayalam}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-malayalam"
-                    placeholder="മലയാളത്തിൽ"
-                  />
-                </div>
+              </div>
+
+              {/* Full Name Malayalam */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5 font-malayalam">
+                  {t('family.name_malayalam')}
+                </label>
+                <input
+                  type="text"
+                  name="name_malayalam"
+                  value={form.name_malayalam}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm font-malayalam"
+                  placeholder="മലയാളത്തിൽ"
+                />
               </div>
 
               {/* Relationship */}
@@ -394,7 +430,7 @@ const FamilyMembers: React.FC = () => {
                   value={form.relationship}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm bg-white"
                 >
                   {RELATIONSHIPS.map((rel) => (
                     <option key={rel.value} value={rel.value}>
@@ -404,58 +440,155 @@ const FamilyMembers: React.FC = () => {
                 </select>
               </div>
 
-              {/* Birth Date */}
+              {/* Gender */}
               <div>
                 <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
-                  {t('family.birth_date')}
+                  {isMl ? 'ലിംഗം' : 'Gender'}
                 </label>
-                <input
-                  type="date"
-                  name="birth_date"
-                  value={form.birth_date}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-                />
+                <div className="flex gap-6">
+                  {['Male', 'Female'].map((g) => (
+                    <label key={g} className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={g}
+                        checked={form.gender === g}
+                        onChange={handleChange}
+                        className="w-4 h-4 accent-teal-600"
+                      />
+                      <span className={`text-sm text-gray-700 ${isMl ? 'font-malayalam' : ''}`}>
+                        {isMl ? (g === 'Male' ? 'പുരുഷൻ' : 'സ്ത്രീ') : g}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              {/* Nakshatra + Rashi */}
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
-                    {t('family.birth_star')}
-                  </label>
+              {/* Date of Birth */}
+              <div>
+                <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                  {isMl ? 'ജനനത്തീയതി' : 'Date of Birth'}
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={openDatePicker}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-colors z-10"
+                    tabIndex={-1}
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </button>
+                  <input
+                    type="text"
+                    name="birth_date"
+                    value={form.birth_date}
+                    readOnly
+                    onClick={openDatePicker}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm cursor-pointer"
+                    placeholder="MMM-DD-YYYY"
+                  />
+                  <input
+                    ref={datePickerRef}
+                    type="date"
+                    tabIndex={-1}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="absolute left-0 top-0 opacity-0 w-full h-full pointer-events-none"
+                    onChange={(e) => {
+                      if (e.target.value) setForm((f) => ({ ...f, birth_date: isoToMmm(e.target.value) }));
+                    }}
+                  />
+                </div>
+                {mlDate && (
+                  <div className="mt-2 bg-teal-50 border border-teal-200 rounded-lg px-4 py-3">
+                    <p className="text-xs font-semibold text-teal-500 uppercase tracking-wider mb-1.5">കൊല്ലവർഷം</p>
+                    <p className="font-malayalam text-teal-800 font-bold text-lg leading-snug">
+                      {mlDate.year} {mlDate.monthMl}{' '}
+                      <span className="font-sans font-normal text-sm text-teal-600">({mlDate.monthEn})</span>{' '}
+                      {mlDate.day}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Birth Star */}
+              <div>
+                <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                  {isMl ? 'ജന്മ നക്ഷത്രം' : 'Birth Star (Nakshatra)'}
+                </label>
+                <div className="relative">
+                  <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   <select
                     name="birth_star"
                     value={form.birth_star}
                     onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm bg-white appearance-none"
                   >
-                    <option value="">Select Nakshatra</option>
-                    {NAKSHATRAS.map((n) => (
-                      <option key={n.en} value={n.en}>
-                        {isMl ? `${n.ml} (${n.en})` : `${n.en} (${n.ml})`}
-                      </option>
+                    <option value="">{isMl ? 'നക്ഷത്രം തിരഞ്ഞെടുക്കുക' : 'Select birth star'}</option>
+                    {BIRTH_STARS.map((s) => (
+                      <option key={s.en} value={s.en}>{s.ml} ({s.en})</option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
-                    {t('family.rashi')}
-                  </label>
-                  <select
-                    name="rashi"
-                    value={form.rashi}
+              </div>
+
+              {/* Place of Birth */}
+              <div className="relative">
+                <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                  {isMl ? 'ജന്മസ്ഥലം' : 'Place of Birth'}
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    name="place_of_birth"
+                    value={form.place_of_birth}
                     onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
-                  >
-                    <option value="">Select Rashi</option>
-                    {RASHIS.map((r) => (
-                      <option key={r.en} value={r.en}>
-                        {isMl ? `${r.ml} (${r.en})` : `${r.en} (${r.ml})`}
-                      </option>
-                    ))}
-                  </select>
+                    onFocus={() => form.place_of_birth.length >= 3 && setShowCitySuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
+                    autoComplete="off"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm"
+                    placeholder={isMl ? 'നഗരം, രാജ്യം' : 'City, Country'}
+                  />
                 </div>
+                {showCitySuggestions && filteredCities.length > 0 && (
+                  <ul className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                    {filteredCities.map((city) => (
+                      <li key={city}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setForm((f) => ({ ...f, place_of_birth: city }));
+                            setShowCitySuggestions(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-800 transition-colors"
+                        >
+                          {city}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Rashi */}
+              <div>
+                <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isMl ? 'font-malayalam' : ''}`}>
+                  {t('family.rashi')}
+                </label>
+                <select
+                  name="rashi"
+                  value={form.rashi}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm bg-white"
+                >
+                  <option value="">Select Rashi</option>
+                  {RASHIS.map((r) => (
+                    <option key={r.en} value={r.en}>
+                      {isMl ? `${r.ml} (${r.en})` : `${r.en} (${r.ml})`}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Notes */}
@@ -468,7 +601,7 @@ const FamilyMembers: React.FC = () => {
                   value={form.notes}
                   onChange={handleChange}
                   rows={2}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm resize-none"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition text-sm resize-none"
                   placeholder="Any additional notes..."
                 />
               </div>

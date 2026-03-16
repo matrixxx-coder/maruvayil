@@ -168,3 +168,7 @@ CREATE TABLE IF NOT EXISTS tree_members (
 
 -- Migration for existing databases
 ALTER TABLE tree_members ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
+
+-- Family member extra fields
+ALTER TABLE family_members ADD COLUMN IF NOT EXISTS gender TEXT;
+ALTER TABLE family_members ADD COLUMN IF NOT EXISTS place_of_birth TEXT;

@@ -17,6 +17,8 @@ function decryptRow(row: Record<string, unknown>): Record<string, unknown> {
     birth_star: decryptNullable(row.birth_star as string | null),
     rashi: decryptNullable(row.rashi as string | null),
     notes: decryptNullable(row.notes as string | null),
+    gender: decryptNullable(row.gender as string | null),
+    place_of_birth: decryptNullable(row.place_of_birth as string | null),
   };
 }
 
@@ -26,7 +28,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const result = await query(
       `SELECT id, user_id, name, name_malayalam, relationship,
               birth_date, birth_date_enc, birth_star, rashi, notes, include_in_pooja,
-              created_at, updated_at
+              gender, place_of_birth, created_at, updated_at
        FROM family_members
        WHERE user_id = $1
        ORDER BY created_at ASC`,
@@ -50,6 +52,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     rashi,
     notes,
     includeInPooja,
+    gender,
+    placeOfBirth,
   } = req.body as {
     name?: string;
     nameMalayalam?: string;
@@ -59,6 +63,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     rashi?: string;
     notes?: string;
     includeInPooja?: boolean;
+    gender?: string;
+    placeOfBirth?: string;
   };
 
   if (!name || !relationship) {
@@ -69,11 +75,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await query(
       `INSERT INTO family_members
-         (user_id, name, name_malayalam, relationship, birth_date_enc, birth_star, rashi, notes, include_in_pooja)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         (user_id, name, name_malayalam, relationship, birth_date_enc, birth_star, rashi, notes, include_in_pooja, gender, place_of_birth)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id, user_id, name, name_malayalam, relationship,
                  birth_date, birth_date_enc, birth_star, rashi, notes, include_in_pooja,
-                 created_at, updated_at`,
+                 gender, place_of_birth, created_at, updated_at`,
       [
         req.userId,
         encrypt(name),
@@ -84,6 +90,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         encryptNullable(rashi ?? null),
         encryptNullable(notes ?? null),
         includeInPooja !== undefined ? includeInPooja : true,
+        encryptNullable(gender ?? null),
+        encryptNullable(placeOfBirth ?? null),
       ]
     );
 
@@ -106,6 +114,8 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     rashi,
     notes,
     includeInPooja,
+    gender,
+    placeOfBirth,
   } = req.body as {
     name?: string;
     nameMalayalam?: string;
@@ -115,6 +125,8 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     rashi?: string;
     notes?: string;
     includeInPooja?: boolean;
+    gender?: string;
+    placeOfBirth?: string;
   };
 
   try {
@@ -138,11 +150,13 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
            birth_star      = COALESCE($5, birth_star),
            rashi           = COALESCE($6, rashi),
            notes           = COALESCE($7, notes),
-           include_in_pooja = COALESCE($8, include_in_pooja)
-       WHERE id = $9 AND user_id = $10
+           include_in_pooja = COALESCE($8, include_in_pooja),
+           gender          = COALESCE($9, gender),
+           place_of_birth  = COALESCE($10, place_of_birth)
+       WHERE id = $11 AND user_id = $12
        RETURNING id, user_id, name, name_malayalam, relationship,
                  birth_date, birth_date_enc, birth_star, rashi, notes, include_in_pooja,
-                 created_at, updated_at`,
+                 gender, place_of_birth, created_at, updated_at`,
       [
         name ? encrypt(name) : null,
         encryptNullable(nameMalayalam ?? null),
@@ -152,6 +166,8 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
         encryptNullable(rashi ?? null),
         encryptNullable(notes ?? null),
         includeInPooja !== undefined ? includeInPooja : null,
+        encryptNullable(gender ?? null),
+        encryptNullable(placeOfBirth ?? null),
         id,
         req.userId,
       ]
